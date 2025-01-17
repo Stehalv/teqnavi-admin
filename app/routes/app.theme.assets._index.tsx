@@ -152,12 +152,12 @@ export const action = async ({ request }: ActionFunctionArgs) => {
 
       // Update the asset with the processed content
       await prisma.themeAsset.update({
-        where: { id: assetId },
-        data: {
+      where: { id: assetId },
+      data: { 
           content: processedContent,
-          updatedAt: new Date()
-        }
-      });
+        updatedAt: new Date()
+      }
+    });
 
       // Create a new version
       const latestVersion = await prisma.themeAssetVersion.findFirst({
@@ -322,12 +322,12 @@ export default function ThemeAssets() {
 
   const handleRestore = async (version: ThemeAssetVersion) => {
     try {
-      const formData = new FormData();
+    const formData = new FormData();
       formData.append('_action', 'restore');
       formData.append('versionId', version.id);
       
       const response = await fetch(`/app/theme/assets/${selectedAsset?.id}/restore?host=${host}`, {
-        method: 'POST',
+      method: 'POST', 
         body: formData
       });
 
@@ -354,14 +354,14 @@ export default function ThemeAssets() {
     setIsSaving(true);
     try {
       console.log('Saving content:', assetContent.substring(0, 100) + '...');
-      
-      const formData = new FormData();
-      formData.append('_action', 'save');
+    
+    const formData = new FormData();
+    formData.append('_action', 'save');
       formData.append('assetId', asset.id);
       formData.append('content', assetContent);
-
+    
       const response = await fetch(`/app/theme/assets?host=${host}`, {
-        method: 'POST',
+      method: 'POST',
         body: formData,
         headers: {
           'Accept': 'application/json'
@@ -410,7 +410,7 @@ export default function ThemeAssets() {
 
   const renderFolder = (title: string, assets: JsonifyObject<ThemeAsset>[], type: string) => {
     const isExpanded = expandedFolders[type];
-    return (
+  return (
       <div>
         <button
           onClick={() => toggleFolder(type)}
@@ -443,7 +443,7 @@ export default function ThemeAssets() {
           <div style={{ paddingLeft: '20px' }}>
             {assets.map(asset => (
               <div 
-                key={asset.id}
+                          key={asset.id}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -475,7 +475,7 @@ export default function ThemeAssets() {
                     fontSize: '0.9em'
                   }}
                 >
-                  {asset.name}
+                            {asset.name}
                   {changedAssets.has(asset.id) && (
                     <span style={{ marginLeft: '8px', color: 'var(--p-text-subdued)' }}>*</span>
                   )}
@@ -654,18 +654,18 @@ export default function ThemeAssets() {
                     Delete
                   </Button>
                 </ButtonGroup>
-              </div>
+                  </div>
               <div style={{ flex: 1, overflow: 'hidden' }}>
-                <CodeEditor
+                  <CodeEditor 
                   key={selectedAsset.id}
-                  asset={{
-                    ...selectedAsset,
+                    asset={{
+                      ...selectedAsset,
                     content: assetContent,
                     createdAt: new Date(selectedAsset.createdAt),
                     updatedAt: new Date(selectedAsset.updatedAt)
-                  }}
-                  onChange={handleContentChange}
-                />
+                    }}
+                    onChange={handleContentChange}
+                  />
               </div>
             </>
           )}
@@ -709,11 +709,11 @@ export default function ThemeAssets() {
         ]}
       >
         <Modal.Section>
-          <TextField
-            label="Name"
-            value={newAssetName}
-            onChange={setNewAssetName}
-            autoComplete="off"
+            <TextField
+              label="Name"
+              value={newAssetName}
+              onChange={setNewAssetName}
+              autoComplete="off"
           />
         </Modal.Section>
       </Modal>
