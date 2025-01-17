@@ -1,5 +1,5 @@
 import { BlockStack, Box, Button, InlineStack, Text, Popover } from "@shopify/polaris";
-import { DragHandleIcon, DeleteIcon, ChevronUpIcon, ChevronDownIcon, SettingsIcon } from "@shopify/polaris-icons";
+import { DragHandleIcon, DeleteIcon, ChevronUpIcon, ChevronDownIcon, SettingsIcon, PlusIcon } from "@shopify/polaris-icons";
 import { BlockSettings } from "./BlockSettings.js";
 import { SectionSettings } from "./SectionSettings.js";
 import { useState } from "react";
@@ -208,40 +208,46 @@ export function ThemeCustomizer({
                       {renderSettings()}
                     </Box>
                   )}
-                  {sectionBlocks.length > 0 && (
-                    <BlockStack gap="300">
-                      {sectionBlocks.map((block) => (
-                        <div
-                          key={block.id}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '8px',
-                            padding: '8px',
-                            background: 'var(--p-surface-subdued)',
-                            borderRadius: '4px'
-                          }}
-                        >
-                          <Button variant="plain" icon={DragHandleIcon} />
-                          <div style={{ flex: 1 }}>
-                            <Text as="p" variant="bodyMd">{block.type}</Text>
-                          </div>
-                          <InlineStack gap="200" align="end">
-                            <Button
-                              icon={SettingsIcon}
-                              onClick={() => handleSettingsClick(block.id, 'block')}
-                              variant="plain"
-                            />
-                            <Button
-                              icon={DeleteIcon}
-                              variant="plain"
-                              tone="critical"
-                            />
-                          </InlineStack>
+                  
+                  <BlockStack gap="300">
+                    {sectionBlocks.map((block) => (
+                      <div
+                        key={block.id}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px',
+                          background: 'var(--p-surface-subdued)',
+                          borderRadius: '4px',
+                          marginLeft: '16px'
+                        }}
+                      >
+                        <Button variant="plain" icon={DragHandleIcon} />
+                        <div style={{ flex: 1 }}>
+                          <Text as="p" variant="bodyMd">{block.type}</Text>
                         </div>
-                      ))}
-                    </BlockStack>
-                  )}
+                        <InlineStack gap="200" align="end">
+                          <Button
+                            icon={SettingsIcon}
+                            onClick={() => handleSettingsClick(block.id, 'block')}
+                            variant="plain"
+                          />
+                          <Button
+                            icon={DeleteIcon}
+                            variant="plain"
+                            tone="critical"
+                          />
+                        </InlineStack>
+                      </div>
+                    ))}
+                    
+                    <div style={{ marginLeft: '16px' }}>
+                      <Button variant="plain" icon={PlusIcon}>
+                        Add block
+                      </Button>
+                    </div>
+                  </BlockStack>
                 </div>
               )}
             </BlockStack>

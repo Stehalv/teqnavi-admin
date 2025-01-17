@@ -286,10 +286,6 @@ export default function ThemeCustomizerPage() {
     }
     try {
       const parsed = JSON.parse(content);
-      console.log('Parsed content:', {
-        sections: parsed.sections,
-        blocks: parsed.blocks
-      });
       
       // Transform sections object to array using order
       const sectionsArray = parsed.order?.map(sectionId => ({
@@ -297,9 +293,19 @@ export default function ThemeCustomizerPage() {
         ...parsed.sections[sectionId]
       })) || [];
 
+      // Transform blocks from nested in sections to flat array
+      const blocksArray = sectionsArray.flatMap(section => {
+        const sectionBlocks = section.blocks || {};
+        return Object.entries(sectionBlocks).map(([blockId, blockData]: [string, any]) => ({
+          id: blockId,
+          sectionId: section.id,
+          ...blockData
+        }));
+      });
+
       return {
         sections: sectionsArray,
-        blocks: Array.isArray(parsed.blocks) ? parsed.blocks : []
+        blocks: blocksArray
       };
     } catch (e) {
       console.error('Failed to parse content:', e);
