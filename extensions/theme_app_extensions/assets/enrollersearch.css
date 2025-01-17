@@ -1,0 +1,107 @@
+.cart-enroller-box {
+    padding: var(--padding);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    border-radius: var(--border-radius);
+  }
+  
+  .enroller-search-box .section-heading__heading {
+    font-size: var(--heading-size);
+    font-weight: var(--font-weight);
+    color: var(--text-color);
+  }
+  
+  .drawer-footer__inner .section-heading__heading {
+    font-size: 0.8em;
+  }
+  
+  .enroller-search-toggle {
+    color: var(--link-color);
+  }
+  
+  .drawer-footer__inner .enroller-search-toggle {
+    font-size: 0.8em;
+  }
+  
+  input {
+    border: 2px solid #d3d3d34a;
+  }
+  
+  #cartEnrollerSearch {
+    width: 100%;
+    background-color: #454142;
+    text-align: center;
+    color: white;
+  }
+  
+  #cartEnrollerSearch a {
+    text-decoration: underline;
+    margin: 7px auto;
+  }
+  
+  .cart-enroller-search-container {
+    position: relative;
+    margin: 0px auto;
+  }
+  
+  #cartEnrollerSearchResult {
+    position: absolute;
+    width: 400px;
+    border: 1px solid gray;
+    max-height: 400px;
+    overflow: auto;
+    z-index: 60001;
+    background-color: white;
+    border-radius: 10px;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  #cartEnrollerSearchResult::-webkit-scrollbar {
+    width: 12px;
+  }
+  
+  #cartEnrollerSearchResult::-webkit-scrollbar-track {
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.3);
+    border-radius: 10px;
+  }
+  
+  #cartEnrollerSearchResult::-webkit-scrollbar-thumb {
+    border-radius: 10px;
+    -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,0.5);
+  }
+  
+  #cartSearchEnrollerInput {
+    width: 400px;
+    margin: 0px auto;
+    max-width: var(--max-width);
+    border-color: var(--border-color);
+  }
+  
+  .search-result-row {
+    width: 100%;
+    padding: 11px;
+    text-align: left !important;
+    border: 1px solid #00000024;
+    font-size: smaller;
+    font-weight: 800;
+  }
+  
+  .search-result-webalias {
+    color: #c4c4c4;
+  }
+  
+  .enrollersearch-interaction {
+    width: 100%;
+  }
+  
+  #cartEnrollerInfo {
+    font-size: 0.8em;
+    font-weight: bolder;
+  }
+  
+  .upper {
+    text-transform: uppercase !important;
+  }

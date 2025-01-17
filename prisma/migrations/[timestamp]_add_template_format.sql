@@ -1,0 +1,1 @@
+ALTER TABLE theme_assets ADD template_format NVARCHAR(10) DEFAULT 'liquid'; 

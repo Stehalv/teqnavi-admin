@@ -1,0 +1,58 @@
+{% schema %}
+{
+  "name": "Enrollment Form",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["*"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Enrollment Form"
+    }
+  ]
+}
+{% endschema %}
+
+<div class="enrollment-form">
+  <h2>{{ block.settings.heading }}</h2>
+  <div id="enrollment-form-content">Loading...</div>
+</div>
+
+<script>
+  const apiUrl = 'https://gratefully-witty-sturgeon.ngrok-free.app/api/enrollment-form';
+  
+  fetch(`${apiUrl}?shop={{ shop.permanent_domain }}`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'Origin': 'https://{{ shop.domain }}'
+    },
+    credentials: 'include'
+  })
+    .then(response => {
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.text().then(text => {
+        try {
+          console.log('Response text:', text);
+          return JSON.parse(text);
+        } catch (e) {
+          console.error('Response text:', text);
+          throw new Error('Invalid JSON response');
+        }
+      });
+    })
+    .then(data => {
+      console.log('Parsed data:', data);
+      document.getElementById('enrollment-form-content').innerHTML = data.template;
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      document.getElementById('enrollment-form-content').innerHTML = 'Error loading form';
+    });
+</script>

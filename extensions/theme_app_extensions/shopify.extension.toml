@@ -1,0 +1,4 @@
+name = "theme_app_extensions"
+type = "theme"
+[settings]
+available_in_theme_editor = true

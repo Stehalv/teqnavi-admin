@@ -1,0 +1,42 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "94b7433443be5e84e0e06ebbfe875a6d"
+application_url = "https://fair-speeches-cradle-da.trycloudflare.com"
+embedded = true
+name = "Teqnavi-Admin"
+handle = "teqnavi-admin"
+
+[build]
+automatically_update_urls_on_dev = true
+dev_store_url = "teqnavi-demo-store-1.myshopify.com"
+include_config_on_deploy = true
+
+[webhooks]
+api_version = "2025-01"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/scopes_update" ]
+  uri = "/webhooks/app/scopes_update"
+
+  [[webhooks.subscriptions]]
+  topics = [ "app/uninstalled" ]
+  uri = "/webhooks/app/uninstalled"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_customers,read_orders,read_products,read_script_tags,write_products,write_script_tags"
+
+[auth]
+redirect_urls = [
+  "https://fair-speeches-cradle-da.trycloudflare.com/auth/callback",
+  "https://fair-speeches-cradle-da.trycloudflare.com/auth/shopify/callback",
+  "https://fair-speeches-cradle-da.trycloudflare.com/api/auth/callback"
+]
+
+[app_proxy]
+url = "https://fair-speeches-cradle-da.trycloudflare.com"
+subpath = "pages"
+prefix = "a"
+
+[pos]
+embedded = false

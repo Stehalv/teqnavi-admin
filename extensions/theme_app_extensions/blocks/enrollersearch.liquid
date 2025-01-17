@@ -1,0 +1,235 @@
+{{ 'enrollersearch.css' | asset_url | stylesheet_tag }}
+
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.7.7/handlebars.min.js"
+  integrity="sha512-RNLkV3d+aLtfcpEyFG8jRbnWHxUqVZozacROI4J2F1sTaDqo1dPQYs01OMi1t1w9Y2FdbSCDSQ2ZVdAC8bzgAg=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+></script>
+
+{{ 'enrollersearch.js' | asset_url | script_tag }}
+
+{% schema %}
+{
+  "name": "Enroller Search",
+  "target": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Basic Settings"
+    },
+    {
+      "type": "text",
+      "id": "default_webalias",
+      "label": "Default Web Alias",
+      "default": "default"
+    },
+    {
+      "type": "header",
+      "content": "Text Content"
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search Placeholder Text",
+      "default": "Enter name"
+    },
+    {
+      "type": "text",
+      "id": "shopping_with_text",
+      "label": "Shopping With Text",
+      "default": "You're shopping with"
+    },
+    {
+      "type": "text",
+      "id": "search_link_text",
+      "label": "Search Link Text",
+      "default": "Want to credit this order to another Brand Partner? Click here"
+    },
+    {
+      "type": "text",
+      "id": "no_thanks_text",
+      "label": "No Thanks Text",
+      "default": "No thanks, I navigated solo"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background Color",
+      "default": "#454142"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text Color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "link_color",
+      "label": "Link Color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "Border Color",
+      "default": "#d3d3d3"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 12,
+      "max": 24,
+      "step": 1,
+      "unit": "px",
+      "label": "Heading Size",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "text_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Text Size",
+      "default": 14
+    },
+    {
+      "type": "select",
+      "id": "font_weight",
+      "label": "Font Weight",
+      "options": [
+        {
+          "value": "400",
+          "label": "Normal"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semi Bold"
+        },
+        {
+          "value": "700",
+          "label": "Bold"
+        }
+      ],
+      "default": "400"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "padding",
+      "min": 4,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Padding",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "min": 0,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Border Radius",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "max_width",
+      "min": 300,
+      "max": 600,
+      "step": 50,
+      "unit": "px",
+      "label": "Maximum Width",
+      "default": 400
+    }
+  ]
+}
+{% endschema %}
+
+<div class="enrollment-form" 
+     data-block-id="{{ block.id }}"
+     style="
+       --background-color: {{ block.settings.background_color }};
+       --text-color: {{ block.settings.text_color }};
+       --link-color: {{ block.settings.link_color }};
+       --border-color: {{ block.settings.border_color }};
+       --heading-size: {{ block.settings.heading_size }}px;
+       --text-size: {{ block.settings.text_size }}px;
+       --font-weight: {{ block.settings.font_weight }};
+       --padding: {{ block.settings.padding }}px;
+       --border-radius: {{ block.settings.border_radius }}px;
+       --max-width: {{ block.settings.max_width }}px;
+     ">
+  {% unless customer.has_account %}
+    <div id="cartEnrollerSearch-{{ block.id }}" class="enroller-search-box" style="display:none">
+      <div id="enroller-id-box-{{ block.id }}">
+        <div class="cart-enroller-box">
+          <span id="cartEnroller-label-{{ block.id }}" class="section-heading__heading">{{ block.settings.shopping_with_text }}</span>
+          <span id="cartEnrollerInfo-{{ block.id }}" class="cartenrollername"></span>
+          <a data-role="search-enroller" id="cart-enroller-search-button-{{ block.id }}" class="enroller-search-toggle">
+            {{ block.settings.search_link_text }}
+          </a>
+        </div>
+        <div class="cart-enroller-search-container" style="display:none">
+          <span id="cartSearch-label-{{ block.id }}" class="section-heading__heading">Search for Brand Partner or Affiliate</span>
+          <div class="enrollersearch-interaction">
+            <input
+              id="cartSearchEnrollerInput-{{ block.id }}"
+              class="form-control text-center"
+              type="text"
+              placeholder="{{ block.settings.search_placeholder }}"
+            >
+            <div id="cartEnrollerSearchResult-{{ block.id }}" style="display:none">Searching...</div>
+          </div>
+          <a data-role="end-search-enroller" id="cart-end-enroller-search-button-{{ block.id }}" class="enroller-search-toggle">
+            {{ block.settings.no_thanks_text }}
+          </a>
+        </div>
+      </div>
+    </div>
+  {% else %}
+    <div id="cartEnrollerSearch-{{ block.id }}" class="enroller-search-box" style="display:none">
+      <div id="enroller-id-box-{{ block.id }}">
+        <div class="cart-enroller-box">
+          <span id="cartEnroller-label-{{ block.id }}" class="section-heading__heading">{{ block.settings.shopping_with_text }}</span>
+          <span id="cartEnrollerInfo-{{ block.id }}" class="cartenrollername"></span>
+        </div>
+      </div>
+    </div>
+  {% endunless %}
+</div>
+
+<script id="cart-search-result-template-{{ block.id }}" type="text/x-handlebars-template">
+  {% raw %}
+    {{#each this}}
+      <div class="search-result-row">
+        <a href="{{ link }}" style="text-decoration:none">
+          <div class="entry">
+            {{firstName}} {{ lastName }}  (ID: {{ customerID }})<br/>
+            <span class="search-result-webalias">{{ webAlias }}</span>
+          </div>
+        </a>
+      </div>
+    {{/each}}
+  {% endraw %}
+</script>

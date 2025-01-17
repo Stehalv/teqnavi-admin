@@ -1,0 +1,16 @@
+{{ 'exigosdk.js' | asset_url | script_tag }}
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    window.exigoSDK = ExigoSDK.init({
+      shopDomain: {{ shop.permanent_domain | json }}
+    });
+  });
+</script>
+
+{% schema %}
+{
+  "name": "ExigoSDK",
+  "target": "head"
+}
+{% endschema %} 

@@ -1,0 +1,111 @@
+{% schema %}
+{
+  "name": "Button Block",
+  "target": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "text",
+      "label": "Button text",
+      "default": "Click here"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "Button link"
+    },
+    {
+      "type": "select",
+      "id": "style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "primary",
+          "label": "Primary"
+        },
+        {
+          "value": "secondary",
+          "label": "Secondary"
+        },
+        {
+          "value": "outline",
+          "label": "Outline"
+        }
+      ],
+      "default": "primary"
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "Button alignment",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "center"
+    }
+  ]
+}
+{% endschema %}
+
+<div style="text-align: {{ block.settings.alignment }}">
+  <a 
+    href="{{ block.settings.link }}"
+    class="button button--{{ block.settings.style }}"
+  >
+    {{ block.settings.text }}
+  </a>
+</div>
+
+{% stylesheet %}
+.button {
+  display: inline-block;
+  padding: 10px 20px;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.button--primary {
+  background-color: #000;
+  color: #fff;
+  border: 2px solid #000;
+}
+
+.button--primary:hover {
+  background-color: #333;
+  border-color: #333;
+}
+
+.button--secondary {
+  background-color: #666;
+  color: #fff;
+  border: 2px solid #666;
+}
+
+.button--secondary:hover {
+  background-color: #888;
+  border-color: #888;
+}
+
+.button--outline {
+  background-color: transparent;
+  color: #000;
+  border: 2px solid #000;
+}
+
+.button--outline:hover {
+  background-color: #000;
+  color: #fff;
+}
+{% endstylesheet %} 
