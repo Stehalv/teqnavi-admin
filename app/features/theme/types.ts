@@ -41,6 +41,7 @@ export interface Block {
   id: string;
   type: string;
   settings: Record<string, any>;
+  sectionId?: string;
 }
 
 export interface Section {

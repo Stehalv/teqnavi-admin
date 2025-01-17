@@ -257,6 +257,11 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
 export default function ThemeCustomizerPage() {
   const { asset, availableSections, availableBlocks, versions, pages, host, shop } = useLoaderData<typeof loader>();
+  console.log('Asset content:', {
+    id: asset.id,
+    content: asset.content,
+    handle: asset.handle
+  });
   const [previewMode, setPreviewMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isHandleModalOpen, setIsHandleModalOpen] = useState(false);
@@ -276,8 +281,26 @@ export default function ThemeCustomizerPage() {
   });
 
   const parsedContent = useMemo(() => {
+    if (!content) {
+      return { sections: [], blocks: [] };
+    }
     try {
-      return JSON.parse(content);
+      const parsed = JSON.parse(content);
+      console.log('Parsed content:', {
+        sections: parsed.sections,
+        blocks: parsed.blocks
+      });
+      
+      // Transform sections object to array using order
+      const sectionsArray = parsed.order?.map(sectionId => ({
+        id: sectionId,
+        ...parsed.sections[sectionId]
+      })) || [];
+
+      return {
+        sections: sectionsArray,
+        blocks: Array.isArray(parsed.blocks) ? parsed.blocks : []
+      };
     } catch (e) {
       console.error('Failed to parse content:', e);
       return { sections: [], blocks: [] };

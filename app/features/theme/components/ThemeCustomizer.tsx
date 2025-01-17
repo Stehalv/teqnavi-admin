@@ -19,11 +19,18 @@ interface BlockEditorProps {
 }
 
 const renderSectionEditor = ({ section, sectionAsset, onChange }: SectionEditorProps) => {
+  console.log('Rendering section editor with:', {
+    sectionId: section.id,
+    sectionType: section.type,
+    sectionSettings: section.settings,
+    sectionAssetContent: sectionAsset?.content?.substring(0, 100) + '...'
+  });
   return (
     <SectionSettings
       section={section}
       sectionAsset={sectionAsset}
       onChange={(updatedSection) => {
+        console.log('Section settings changed:', updatedSection);
         if (updatedSection.settings) {
           Object.entries(updatedSection.settings).forEach(([key, value]) => {
             onChange(section.id, key, value);
@@ -35,11 +42,18 @@ const renderSectionEditor = ({ section, sectionAsset, onChange }: SectionEditorP
 };
 
 const renderBlockEditor = ({ block, blockAsset, onChange }: BlockEditorProps) => {
+  console.log('Rendering block editor with:', {
+    blockId: block.id,
+    blockType: block.type,
+    blockSettings: block.settings,
+    blockAssetContent: blockAsset?.content?.substring(0, 100) + '...'
+  });
   return (
     <BlockSettings
       block={block}
       blockAsset={blockAsset}
       onChange={(updatedBlock) => {
+        console.log('Block settings changed:', updatedBlock);
         if (updatedBlock.settings) {
           Object.entries(updatedBlock.settings).forEach(([key, value]) => {
             onChange(block.id, block.id, key, value);
@@ -65,11 +79,19 @@ export function ThemeCustomizer({
   onSectionSettingsChange,
   onBlockSettingsChange
 }: ThemeCustomizerProps) {
+  console.log('ThemeCustomizer received:', {
+    sections: sections.map(s => ({ id: s.id, type: s.type })),
+    blocks: blocks.map(b => ({ id: b.id, type: b.type })),
+    assets: assets.map(a => ({ id: a.id, type: a.type }))
+  });
+
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [selectedItemType, setSelectedItemType] = useState<'section' | 'block' | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
 
   const handleSettingsClick = (itemId: string, type: 'section' | 'block') => {
+    console.log('Settings clicked:', { itemId, type });
     setSelectedItemId(itemId);
     setSelectedItemType(type);
     setIsSettingsOpen(true);
@@ -81,12 +103,29 @@ export function ThemeCustomizer({
     setSelectedItemType(null);
   };
 
+  const toggleCollapse = (sectionId: string) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sectionId)) {
+        newSet.delete(sectionId);
+      } else {
+        newSet.add(sectionId);
+      }
+      return newSet;
+    });
+  };
+
   const renderSettings = () => {
+    console.log('Rendering settings for:', { selectedItemId, selectedItemType });
     if (!selectedItemId || !selectedItemType) return null;
 
     if (selectedItemType === 'section') {
       const section = sections.find(s => s.id === selectedItemId);
       const sectionAsset = assets.find(a => a.type === section?.type);
+      console.log('Found section and asset:', { 
+        section: section ? { id: section.id, type: section.type } : null,
+        sectionAsset: sectionAsset ? { id: sectionAsset.id, type: sectionAsset.type } : null 
+      });
       if (!section || !sectionAsset) return null;
 
       return renderSectionEditor({
@@ -99,6 +138,10 @@ export function ThemeCustomizer({
     if (selectedItemType === 'block') {
       const block = blocks.find(b => b.id === selectedItemId);
       const blockAsset = assets.find(a => a.type === block?.type);
+      console.log('Found block and asset:', {
+        block: block ? { id: block.id, type: block.type } : null,
+        blockAsset: blockAsset ? { id: blockAsset.id, type: blockAsset.type } : null
+      });
       if (!block || !blockAsset) return null;
 
       return renderBlockEditor({
@@ -110,62 +153,101 @@ export function ThemeCustomizer({
   };
 
   if (!Array.isArray(sections) || !Array.isArray(blocks) || !Array.isArray(assets)) {
+    console.log('Invalid arrays received:', { 
+      sectionsIsArray: Array.isArray(sections),
+      blocksIsArray: Array.isArray(blocks),
+      assetsIsArray: Array.isArray(assets)
+    });
     return null;
   }
 
   return (
     <div>
-      {sections.map((section) => (
-        <Box key={section.id} padding="400" background="bg-surface">
-          <BlockStack gap="400">
-            <InlineStack align="space-between">
-              <Text as="h2" variant="headingMd">{section.type}</Text>
-              <InlineStack gap="200">
-                <Popover
-                  active={isSettingsOpen && selectedItemId === section.id}
-                  onClose={handleSettingsClose}
-                  activator={
-                    <Button
-                      icon={SettingsIcon}
-                      onClick={() => handleSettingsClick(section.id, 'section')}
-                    />
-                  }
-                  preferredAlignment="left"
-                >
-                  <Box padding="400" minWidth="400px">
-                    {renderSettings()}
-                  </Box>
-                </Popover>
-              </InlineStack>
-            </InlineStack>
-            
-            {blocks.filter(b => b.id.startsWith(section.id)).map((block) => (
-              <Box key={block.id} padding="400" background="bg-surface-secondary">
-                <InlineStack align="space-between">
-                  <Text as="p" variant="bodyMd">{block.type}</Text>
-                  <InlineStack gap="200">
-                    <Popover
-                      active={isSettingsOpen && selectedItemId === block.id}
-                      onClose={handleSettingsClose}
-                      activator={
-                        <Button
-                          icon={SettingsIcon}
-                          onClick={() => handleSettingsClick(block.id, 'block')}
-                        />
-                      }
-                      preferredAlignment="left"
-                    >
-                      <Box padding="400" minWidth="400px">
-                        {renderSettings()}
-                      </Box>
-                    </Popover>
-                  </InlineStack>
+      {sections.map((section) => {
+        const isCollapsed = collapsedSections.has(section.id);
+        const sectionBlocks = blocks.filter(block => block.sectionId === section.id);
+
+        return (
+          <Box key={section.id} padding="400" background="bg-surface">
+            <BlockStack gap="400">
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '8px',
+                padding: '8px',
+                background: 'var(--p-surface-selected)',
+                borderRadius: '4px'
+              }}>
+                <Button variant="plain" icon={DragHandleIcon} />
+                <div style={{ flex: 1 }}>
+                  <Text as="h2" variant="headingMd">{section.type}</Text>
+                </div>
+                <InlineStack gap="200" align="end">
+                  <Button
+                    icon={SettingsIcon}
+                    onClick={() => handleSettingsClick(section.id, 'section')}
+                    variant="plain"
+                  />
+                  <Button
+                    icon={DeleteIcon}
+                    variant="plain"
+                    tone="critical"
+                  />
+                  <Button
+                    icon={isCollapsed ? ChevronDownIcon : ChevronUpIcon}
+                    onClick={() => toggleCollapse(section.id)}
+                    variant="plain"
+                  />
                 </InlineStack>
-              </Box>
-            ))}
-          </BlockStack>
-        </Box>
-      ))}
+              </div>
+
+              {!isCollapsed && (
+                <div style={{ paddingLeft: '24px' }}>
+                  {selectedItemId === section.id && (
+                    <Box padding="400">
+                      {renderSettings()}
+                    </Box>
+                  )}
+                  {sectionBlocks.length > 0 && (
+                    <BlockStack gap="300">
+                      {sectionBlocks.map((block) => (
+                        <div
+                          key={block.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px',
+                            background: 'var(--p-surface-subdued)',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <Button variant="plain" icon={DragHandleIcon} />
+                          <div style={{ flex: 1 }}>
+                            <Text as="p" variant="bodyMd">{block.type}</Text>
+                          </div>
+                          <InlineStack gap="200" align="end">
+                            <Button
+                              icon={SettingsIcon}
+                              onClick={() => handleSettingsClick(block.id, 'block')}
+                              variant="plain"
+                            />
+                            <Button
+                              icon={DeleteIcon}
+                              variant="plain"
+                              tone="critical"
+                            />
+                          </InlineStack>
+                        </div>
+                      ))}
+                    </BlockStack>
+                  )}
+                </div>
+              )}
+            </BlockStack>
+          </Box>
+        );
+      })}
     </div>
   );
 }

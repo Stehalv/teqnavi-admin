@@ -27,16 +27,33 @@ export function SectionSettings({
   sectionAsset: ThemeAsset | JsonifyObject<ThemeAsset>;
   onChange: (section: Section) => void;
 }) {
+  console.log('SectionSettings received:', {
+    sectionId: section.id,
+    sectionType: section.type,
+    initialSettings: section.settings,
+    assetContent: sectionAsset?.content?.substring(0, 100) + '...'
+  });
+
   const [settings, setSettings] = useState(section.settings);
 
   const schema = useMemo(() => {
-    if (!sectionAsset?.content) return { settings: [] };
+    console.log('SectionSettings parsing schema from content:', sectionAsset?.content?.substring(0, 100) + '...');
+    if (!sectionAsset?.content) {
+      console.log('SectionSettings: No content found');
+      return { settings: [] };
+    }
     
     const match = sectionAsset.content.match(/{% schema %}([\s\S]*?){% endschema %}/);
-    if (!match) return { settings: [] };
+    console.log('SectionSettings schema match:', match ? 'Found schema' : 'No schema found');
+    if (!match) {
+      console.log('SectionSettings: No schema match found');
+      return { settings: [] };
+    }
     
     try {
-      return JSON.parse(match[1]) as Schema;
+      const parsed = JSON.parse(match[1]) as Schema;
+      console.log('SectionSettings parsed schema:', parsed);
+      return parsed;
     } catch (e) {
       console.error('Failed to parse schema:', e);
       return { settings: [] };
@@ -44,6 +61,7 @@ export function SectionSettings({
   }, [sectionAsset]);
 
   const handleSettingChange = (key: string, value: any) => {
+    console.log('SectionSettings setting change:', { key, value });
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     onChange({

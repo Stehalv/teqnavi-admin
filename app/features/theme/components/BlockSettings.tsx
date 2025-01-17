@@ -35,9 +35,17 @@ export function BlockSettings({
   blockAsset: ThemeAsset | JsonifyObject<ThemeAsset>;
   onChange: (block: Block) => void;
 }) {
+  console.log('BlockSettings received:', {
+    blockId: block.id,
+    blockType: block.type,
+    initialSettings: block.settings,
+    assetContent: blockAsset?.content?.substring(0, 100) + '...'
+  });
+
   const [settings, setSettings] = useState(block.settings);
 
   const handleSettingChange = (key: string, value: any) => {
+    console.log('BlockSettings setting change:', { key, value });
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     onChange({
@@ -50,15 +58,20 @@ export function BlockSettings({
   let schema;
   try {
     const schemaMatch = blockAsset.content.match(/{% schema %}([\s\S]*?){% endschema %}/);
+    console.log('BlockSettings schema match:', schemaMatch ? 'Found schema' : 'No schema found');
     if (schemaMatch) {
       schema = JSON.parse(schemaMatch[1]);
+      console.log('BlockSettings parsed schema:', schema);
     }
   } catch (e) {
     console.error('Error parsing block schema:', e);
     return null;
   }
 
-  if (!schema) return null;
+  if (!schema) {
+    console.log('BlockSettings: No schema found, returning null');
+    return null;
+  }
 
   const renderField = (field: any) => {
     if (field.type === 'header') {
