@@ -2,9 +2,15 @@ import { BlockStack, Box, Button, InlineStack, Text, Popover } from "@shopify/po
 import { DragHandleIcon, DeleteIcon, ChevronUpIcon, ChevronDownIcon, SettingsIcon, PlusIcon } from "@shopify/polaris-icons";
 import { BlockSettings } from "./BlockSettings.js";
 import { SectionSettings } from "./SectionSettings.js";
-import { useState } from "react";
+import { AssetPicker } from "./AssetPicker.js";
+import { useState, useRef } from "react";
 import type { ThemeAsset, Block, Section } from "../types.js";
 import type { MouseEvent } from "react";
+
+interface SourcedItem extends ThemeAsset {
+  source: 'app' | 'custom' | 'section';
+  name: string;
+}
 
 interface SectionEditorProps {
   section: Section;
@@ -89,6 +95,18 @@ export function ThemeCustomizer({
   const [selectedItemType, setSelectedItemType] = useState<'section' | 'block' | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
+  const [pickerState, setPickerState] = useState<{
+    isOpen: boolean;
+    mode: 'section' | 'block' | null;
+    context?: { sectionId?: string };
+  }>({
+    isOpen: false,
+    mode: null,
+    context: {}
+  });
+
+  const addSectionButton = useRef<HTMLButtonElement>(null);
+  const addBlockButtons = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const handleSettingsClick = (itemId: string, type: 'section' | 'block') => {
     console.log('Settings clicked:', { itemId, type });
@@ -152,6 +170,15 @@ export function ThemeCustomizer({
     }
   };
 
+  const handleAddButtonClick = (mode: 'section' | 'block', sectionId?: string) => {
+    console.log('Button clicked:', { mode, sectionId });
+    setPickerState({
+      isOpen: true,
+      mode,
+      context: sectionId ? { sectionId } : {}
+    });
+  };
+
   if (!Array.isArray(sections) || !Array.isArray(blocks) || !Array.isArray(assets)) {
     console.log('Invalid arrays received:', { 
       sectionsIsArray: Array.isArray(sections),
@@ -162,98 +189,187 @@ export function ThemeCustomizer({
   }
 
   return (
-    <div>
+    <div style={{ position: 'relative' }}>
       {sections.map((section) => {
         const isCollapsed = collapsedSections.has(section.id);
         const sectionBlocks = blocks.filter(block => block.sectionId === section.id);
 
         return (
-          <Box key={section.id} padding="400" background="bg-surface">
-            <BlockStack gap="400">
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px',
-                padding: '8px',
-                background: 'var(--p-surface-selected)',
-                borderRadius: '4px'
-              }}>
-                <Button variant="plain" icon={DragHandleIcon} />
-                <div style={{ flex: 1 }}>
-                  <Text as="h2" variant="headingMd">{section.type}</Text>
+          <Box 
+            key={section.id} 
+            padding="400" 
+            background="bg-surface"
+            borderColor="border"
+            borderWidth="025"
+            borderRadius="200"
+          >
+            <div style={{ marginBottom: 'var(--p-space-400)' }}>
+              <BlockStack gap="400">
+                <div style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '8px',
+                  padding: '8px',
+                  background: 'var(--p-surface-selected)',
+                  borderRadius: '4px'
+                }}>
+                  <Button variant="plain" icon={DragHandleIcon} />
+                  <div style={{ flex: 1 }}>
+                    <Text as="h2" variant="headingMd">{section.type}</Text>
+                  </div>
+                  <InlineStack gap="200" align="end">
+                    <Button
+                      icon={SettingsIcon}
+                      onClick={() => handleSettingsClick(section.id, 'section')}
+                      variant="plain"
+                    />
+                    <Button
+                      icon={DeleteIcon}
+                      variant="plain"
+                      tone="critical"
+                    />
+                    <Button
+                      icon={isCollapsed ? ChevronDownIcon : ChevronUpIcon}
+                      onClick={() => toggleCollapse(section.id)}
+                      variant="plain"
+                    />
+                  </InlineStack>
                 </div>
-                <InlineStack gap="200" align="end">
-                  <Button
-                    icon={SettingsIcon}
-                    onClick={() => handleSettingsClick(section.id, 'section')}
-                    variant="plain"
-                  />
-                  <Button
-                    icon={DeleteIcon}
-                    variant="plain"
-                    tone="critical"
-                  />
-                  <Button
-                    icon={isCollapsed ? ChevronDownIcon : ChevronUpIcon}
-                    onClick={() => toggleCollapse(section.id)}
-                    variant="plain"
-                  />
-                </InlineStack>
-              </div>
 
-              {!isCollapsed && (
-                <div style={{ paddingLeft: '24px' }}>
-                  {selectedItemId === section.id && (
-                    <Box padding="400">
-                      {renderSettings()}
-                    </Box>
-                  )}
-                  
-                  <BlockStack gap="300">
-                    {sectionBlocks.map((block) => (
-                      <div
-                        key={block.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          padding: '8px',
-                          background: 'var(--p-surface-subdued)',
-                          borderRadius: '4px',
-                          marginLeft: '16px'
-                        }}
-                      >
-                        <Button variant="plain" icon={DragHandleIcon} />
-                        <div style={{ flex: 1 }}>
-                          <Text as="p" variant="bodyMd">{block.type}</Text>
-                        </div>
-                        <InlineStack gap="200" align="end">
-                          <Button
-                            icon={SettingsIcon}
-                            onClick={() => handleSettingsClick(block.id, 'block')}
-                            variant="plain"
-                          />
-                          <Button
-                            icon={DeleteIcon}
-                            variant="plain"
-                            tone="critical"
-                          />
-                        </InlineStack>
-                      </div>
-                    ))}
+                {!isCollapsed && (
+                  <div style={{ paddingLeft: '24px' }}>
+                    {selectedItemId === section.id && (
+                      <Box padding="400">
+                        {renderSettings()}
+                      </Box>
+                    )}
                     
-                    <div style={{ marginLeft: '16px' }}>
-                      <Button variant="plain" icon={PlusIcon}>
-                        Add block
-                      </Button>
-                    </div>
-                  </BlockStack>
-                </div>
-              )}
-            </BlockStack>
+                    <BlockStack gap="300">
+                      {sectionBlocks.map((block) => (
+                        <div
+                          key={block.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '8px',
+                            background: 'var(--p-surface-subdued)',
+                            borderRadius: '4px',
+                            marginLeft: '16px'
+                          }}
+                        >
+                          <Button variant="plain" icon={DragHandleIcon} />
+                          <div style={{ flex: 1 }}>
+                            <Text as="p" variant="bodyMd">{block.type}</Text>
+                          </div>
+                          <InlineStack gap="200" align="end">
+                            <Button
+                              icon={SettingsIcon}
+                              onClick={() => handleSettingsClick(block.id, 'block')}
+                              variant="plain"
+                            />
+                            <Button
+                              icon={DeleteIcon}
+                              variant="plain"
+                              tone="critical"
+                            />
+                          </InlineStack>
+                        </div>
+                      ))}
+                      
+                      <div style={{ marginLeft: '16px' }}>
+                        <Popover
+                          active={pickerState.isOpen && pickerState.mode === 'block' && pickerState.context?.sectionId === section.id}
+                          activator={
+                            <Button 
+                              variant="plain" 
+                              icon={PlusIcon}
+                              onClick={() => handleAddButtonClick('block', section.id)}
+                            >
+                              Add block
+                            </Button>
+                          }
+                          preferredPosition="above"
+                          onClose={() => setPickerState(prev => ({ ...prev, isOpen: false }))}
+                        >
+                          <AssetPicker
+                            mode="block"
+                            items={assets
+                              .filter(asset => asset.type === 'block')
+                              .map(asset => ({
+                                id: asset.id,
+                                type: asset.type,
+                                name: asset.name || asset.type,
+                                source: asset.handle?.startsWith('extensions/theme-app-extension/') 
+                                  ? 'app' 
+                                  : asset.shopId 
+                                    ? 'custom'
+                                    : 'section',
+                                createdAt: asset.createdAt.toISOString(),
+                                updatedAt: asset.updatedAt.toISOString()
+                              }))}
+                            onSelect={(item) => {
+                              console.log('Item selected:', item);
+                              setPickerState(prev => ({ ...prev, isOpen: false }));
+                            }}
+                            onClose={() => {
+                              console.log('Picker closing');
+                              setPickerState(prev => ({ ...prev, isOpen: false }));
+                            }}
+                          />
+                        </Popover>
+                      </div>
+                    </BlockStack>
+                  </div>
+                )}
+              </BlockStack>
+            </div>
           </Box>
         );
       })}
+      
+      <Box padding="400">
+        <Popover
+          active={pickerState.isOpen && pickerState.mode === 'section'}
+          activator={
+            <Button 
+              variant="plain" 
+              icon={PlusIcon}
+              onClick={() => handleAddButtonClick('section')}
+            >
+              Add section
+            </Button>
+          }
+          preferredPosition="above"
+          onClose={() => setPickerState(prev => ({ ...prev, isOpen: false }))}
+        >
+          <AssetPicker
+            mode="section"
+            items={assets
+              .filter(asset => asset.type === 'section')
+              .map(asset => ({
+                id: asset.id,
+                type: asset.type,
+                name: asset.name || asset.type,
+                source: asset.handle?.startsWith('extensions/theme-app-extension/') 
+                  ? 'app' 
+                  : asset.shopId 
+                    ? 'custom'
+                    : 'section',
+                createdAt: asset.createdAt.toISOString(),
+                updatedAt: asset.updatedAt.toISOString()
+              }))}
+            onSelect={(item) => {
+              console.log('Item selected:', item);
+              setPickerState(prev => ({ ...prev, isOpen: false }));
+            }}
+            onClose={() => {
+              console.log('Picker closing');
+              setPickerState(prev => ({ ...prev, isOpen: false }));
+            }}
+          />
+        </Popover>
+      </Box>
     </div>
   );
 }

@@ -13,6 +13,7 @@ import type { Prisma } from "@prisma/client";
 import { EditIcon } from "@shopify/polaris-icons";
 import { ThemeCustomizer } from "~/features/theme/components/ThemeCustomizer.js";
 import { VersionHistory } from "~/features/theme/components/VersionHistory.js";
+import { AssetPicker } from "~/features/theme/components/AssetPicker.js";
 import { glob } from "glob";
 import { readFile } from "fs/promises";
 
@@ -394,7 +395,7 @@ export default function ThemeCustomizerPage() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--p-surface)' }}>
+    <Page fullWidth>
       <PublishingBar 
         asset={{
           ...asset,
@@ -420,7 +421,8 @@ export default function ThemeCustomizerPage() {
           borderRight: '1px solid var(--p-border-subdued)',
           background: 'var(--p-surface)',
           display: 'flex',
-          flexDirection: 'column'
+          flexDirection: 'column',
+          position: 'relative'
         }}>
           <div style={{ 
             padding: '1rem', 
@@ -562,6 +564,6 @@ export default function ThemeCustomizerPage() {
           />
         </Modal.Section>
       </Modal>
-    </div>
+    </Page>
   );
 }
