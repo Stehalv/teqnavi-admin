@@ -1,110 +1,98 @@
-import { BlockStack, Button, TextField, InlineStack, ActionList, Scrollable, Box } from "@shopify/polaris";
-import { useState } from "react";
-import type { ThemeAsset } from "../types.js";
-
-interface SourcedItem {
-  source: ItemSource;
-  createdAt: string;
-  updatedAt: string;
-  name: string;
-}
-
-type ItemSource = 'app' | 'custom' | 'section';
+import { Box, Tabs, TextField } from "@shopify/polaris";
+import type { ProcessedAsset } from "../types.js";
+import { useAssetPicker } from "../hooks/useAssetPicker.js";
 
 interface AssetPickerProps {
   mode: 'section' | 'block';
-  items: SourcedItem[];
-  onSelect: (item: SourcedItem) => void;
+  assets: ProcessedAsset[];
+  onSelect: (item: ProcessedAsset) => void;
   onClose: () => void;
+  currentSectionId?: string;
 }
 
-export function AssetPicker({ mode, items, onSelect, onClose }: AssetPickerProps) {
-  const [activeTab, setActiveTab] = useState<ItemSource>('app');
-  const [searchValue, setSearchValue] = useState('');
+export function AssetPicker({
+  mode,
+  assets,
+  onSelect,
+  onClose,
+  currentSectionId
+}: AssetPickerProps) {
+  const {
+    activeTab,
+    setActiveTab,
+    searchValue,
+    setSearchValue,
+    filteredAssets,
+    tabCounts
+  } = useAssetPicker({
+    mode,
+    assets,
+    currentSectionId
+  });
 
-  const getFilteredItems = () => {
-    const searchTerm = searchValue.toLowerCase();
-    const filteredBySearch = items.filter(item => 
-      item.name.toLowerCase().includes(searchTerm)
-    );
-
-    return filteredBySearch.filter(item => {
-      if (mode === 'section') {
-        if (activeTab === 'app') {
-          return item.source === 'app';
-        } else if (activeTab === 'custom') {
-          return item.source === 'custom';
-        }
-      } else {
-        // For blocks, filter based on the active tab
-        return item.source === activeTab;
-      }
-      return true;
-    });
-  };
-
-  const getTabCounts = () => {
-    const sources: ItemSource[] = mode === 'block' 
-      ? ['app', 'section', 'custom']
-      : ['app', 'custom'];
-    return sources.reduce((acc, source) => ({
-      ...acc,
-      [source]: items.filter(item => item.source === source).length.toString()
-    }), {} as Record<ItemSource, string>);
-  };
-
-  const handleSelect = (item: SourcedItem) => {
-    onSelect(item);
-    onClose();
-  };
+  const tabs = [
+    {
+      id: 'block',
+      content: `Section Blocks (${tabCounts.block ?? 0})`,
+      accessibilityLabel: 'Section Blocks',
+      panelID: 'section-panel'
+    },
+    {
+      id: 'custom',
+      content: `Custom Blocks (${tabCounts.custom})`,
+      accessibilityLabel: 'Custom Blocks',
+      panelID: 'custom-panel'
+    },
+    {
+      id: 'common',
+      content: `Common Blocks (${tabCounts.common})`,
+      accessibilityLabel: 'Common Blocks',
+      panelID: 'common-panel'
+    }
+  ];
 
   return (
-    <Box padding="400" width="320px">
-      <BlockStack gap="400">
-        <TextField
-          label={`Search ${mode}s`}
-          labelHidden
-          value={searchValue}
-          onChange={setSearchValue}
-          autoComplete="off"
-          placeholder={`Search ${mode}s`}
-        />
-        
-        <InlineStack gap="200" align="space-between">
-          <Button
-            variant="plain"
-            pressed={activeTab === 'app'}
-            onClick={() => setActiveTab('app')}
-          >
-            Common ({getTabCounts().app})
-          </Button>
-          {mode === 'block' && (
-            <Button
-              variant="plain"
-              pressed={activeTab === 'section'}
-              onClick={() => setActiveTab('section')}
-            >
-              Section ({getTabCounts().section})
-            </Button>
-          )}
-          <Button
-            variant="plain"
-            pressed={activeTab === 'custom'}
-            onClick={() => setActiveTab('custom')}
-          >
-            Custom ({getTabCounts().custom})
-          </Button>
-        </InlineStack>
-
-        <Scrollable style={{maxHeight: '400px'}}>
-          <ActionList
-            items={getFilteredItems().map(item => ({
-              content: item.name,
-              onAction: () => handleSelect(item)
-            }))}
+    <div style={{ padding: '16px' }}>
+      <div style={{ width: '568px' }}>
+        <div style={{ marginBottom: '16px' }}>
+          <Tabs
+            tabs={tabs}
+            selected={tabs.findIndex(tab => tab.id === activeTab)}
+            onSelect={index => setActiveTab(tabs[index].id as 'block' | 'custom' | 'common')}
+            fitted
           />
-        </Scrollable>
-      </BlockStack>
-    </Box>
+        </div>
+
+        <div style={{ marginBottom: '16px' }}>
+          <TextField
+            label="Search"
+            value={searchValue}
+            onChange={setSearchValue}
+            autoComplete="off"
+            placeholder="Search blocks..."
+            labelHidden
+          />
+        </div>
+
+        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          {filteredAssets.map(item => (
+            <div
+              key={item.id}
+              style={{
+                padding: '8px',
+                borderBottom: '1px solid var(--p-border)',
+                cursor: 'pointer'
+              }}
+              onClick={() => {
+                onSelect(item);
+                onClose();
+              }}
+            >
+              <div>{item.name}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 } 

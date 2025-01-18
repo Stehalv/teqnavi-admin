@@ -1,85 +1,26 @@
 import { useEffect, useState } from "react";
 import { renderPage } from "../utils/renderPage.js";
-import type { ThemeAsset, JsonifyObject } from "../types.js";
-
-// Move file block types outside component to prevent recreation on each render
-const fileBlockTypes: ThemeAsset[] = [
-  {
-    id: 'text',
-    name: 'text',
-    type: 'block',
-    content: `<div style="text-align: {{ settings.text_align }}">{{ settings.text }}</div>`,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    shopId: '',
-    settings: '{}',
-    template_format: 'liquid',
-    handle: 'text',
-    source: 'app'
-  },
-  {
-    id: 'heading',
-    name: 'heading',
-    type: 'block',
-    content: `<{{ settings.heading_size }} style="text-align: {{ settings.text_align }}">{{ settings.heading }}</{{ settings.heading_size }}>`,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    shopId: '',
-    settings: '{}',
-    template_format: 'liquid',
-    handle: 'heading',
-    source: 'app'
-  },
-  {
-    id: 'button',
-    name: 'button',
-    type: 'block',
-    content: `<div style="text-align: {{ settings.alignment }}">
-      <a href="{{ settings.link }}" class="button button--{{ settings.style }}">
-        {{ settings.text }}
-      </a>
-    </div>`,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    shopId: '',
-    settings: '{}',
-    template_format: 'liquid',
-    handle: 'button',
-    source: 'app'
-  }
-];
 
 interface PagePreviewProps {
-  page: ThemeAsset | JsonifyObject<ThemeAsset>;
-  sections: (ThemeAsset | JsonifyObject<ThemeAsset>)[];
-  blocks: (ThemeAsset | JsonifyObject<ThemeAsset>)[];
+  page: {
+    id: string;
+    name: string;
+    content: string;
+  };
+  selectedItemId?: string | null;
 }
 
-export function PagePreview({ page, sections, blocks }: PagePreviewProps) {
+export function PagePreview({ page, selectedItemId }: PagePreviewProps) {
   const [renderedContent, setRenderedContent] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const render = async () => {
       try {
-        // Combine blocks from both sources
-        const allBlocks = [...fileBlockTypes, ...blocks];
-        const html = await renderPage(page, sections, allBlocks);
-
-        // Store the rendered HTML
-        await fetch('/api/store-rendered-html', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            pageId: page.id,
-            renderedHtml: html
-          })
-        });
+        // Parse the page content to get sections and blocks
+        const pageContent = JSON.parse(page.content);
+        console.log('PagePreview parsed content:', JSON.stringify(pageContent, null, 2));
+        const html = await renderPage(pageContent);
 
         const finalHtml = `
           <style>
@@ -160,6 +101,10 @@ export function PagePreview({ page, sections, blocks }: PagePreviewProps) {
               background-color: #000;
               color: #fff !important;
             }
+            .selected-item {
+              outline: 2px solid #5c6ac4;
+              outline-offset: 2px;
+            }
           </style>
           <div class="main-page-content page-width page-margin-top">
             <div class="title-wrapper-with-link">
@@ -180,7 +125,7 @@ export function PagePreview({ page, sections, blocks }: PagePreviewProps) {
     };
 
     render();
-  }, [page, sections, blocks]);
+  }, [page, selectedItemId]);
 
   if (error) {
     return <div style={{ color: 'red', padding: '1rem' }}>{error}</div>;

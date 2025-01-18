@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "94b7433443be5e84e0e06ebbfe875a6d"
-application_url = "https://fair-speeches-cradle-da.trycloudflare.com"
+application_url = "https://endif-starsmerchant-portable-color.trycloudflare.com"
 embedded = true
 name = "Teqnavi-Admin"
 handle = "teqnavi-admin"
@@ -28,13 +28,13 @@ scopes = "read_customers,read_orders,read_products,read_script_tags,write_produc
 
 [auth]
 redirect_urls = [
-  "https://fair-speeches-cradle-da.trycloudflare.com/auth/callback",
-  "https://fair-speeches-cradle-da.trycloudflare.com/auth/shopify/callback",
-  "https://fair-speeches-cradle-da.trycloudflare.com/api/auth/callback"
+  "https://endif-starsmerchant-portable-color.trycloudflare.com/auth/callback",
+  "https://endif-starsmerchant-portable-color.trycloudflare.com/auth/shopify/callback",
+  "https://endif-starsmerchant-portable-color.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://fair-speeches-cradle-da.trycloudflare.com"
+url = "https://endif-starsmerchant-portable-color.trycloudflare.com"
 subpath = "pages"
 prefix = "a"
 

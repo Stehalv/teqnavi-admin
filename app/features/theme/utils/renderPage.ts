@@ -1,5 +1,4 @@
 import { Liquid } from 'liquidjs';
-import type { ThemeAsset, JsonifyObject } from "../types.js";
 
 const engine = new Liquid({
   strictVariables: false,
@@ -45,187 +44,78 @@ engine.registerFilter('image_url', (value: string) => {
   return value;
 });
 
-export async function renderPage(
-  page: ThemeAsset | JsonifyObject<ThemeAsset>, 
-  sections: (ThemeAsset | JsonifyObject<ThemeAsset>)[], 
-  blocks: (ThemeAsset | JsonifyObject<ThemeAsset>)[]
-) {
-  try {
-    let pageContent;
-    try {
-      pageContent = JSON.parse(page.content);
-    } catch (e) {
-      // If content is not JSON, treat it as a Liquid template
-      pageContent = { 
-        order: ['main'],
-        sections: {
-          main: {
-            type: page.type || 'main',
-            settings: {},
-            blocks: {}
-          }
+interface PageContent {
+  sections: {
+    [key: string]: {
+      type: string;
+      settings: Record<string, any>;
+      blocks?: {
+        [key: string]: {
+          type: string;
+          settings: Record<string, any>;
+          source?: string;
         }
       };
     }
-    
-    // Pre-process content to handle stylesheets and extract schema
-    const processContent = (content: string) => {
-      let schema: { settings?: Array<{ id: string, default?: any }> } = {};
-      const schemaMatch = content.match(/{% schema %}([\s\S]*?){% endschema %}/);
-      if (schemaMatch) {
-        try {
-          schema = JSON.parse(schemaMatch[1]);
-        } catch (error) {
-          console.error('Error parsing schema:', error);
-        }
-      }
+  };
+  order: string[];
+}
 
-      // Extract stylesheets and convert to style tags
-      const processed = content
-        .replace(/{% schema %}[\s\S]*?{% endschema %}/, '')
-        .replace(/{% stylesheet %}([\s\S]*?){% endstylesheet %}/g, (_, css) => {
-          return `<style>${css.trim()}</style>`;
-        })
-        .replace(/{% style %}([\s\S]*?){% endstyle %}/g, (_, css) => {
-          return `<style>${css.trim()}</style>`;
-        })
-        .replace(/{% javascript %}[\s\S]*?{% endjavascript %}/g, '');
-      
-      return { content: processed, schema };
-    };
+interface Section {
+  id: string;
+  type: string;
+  settings: Record<string, any>;
+  blocks?: Block[];
+}
 
-    // Create a map of block types to their templates and schemas
-    const blockTemplates = new Map();
-    blocks.forEach(block => {
-      if (block.content) {
-        const { content, schema } = processContent(block.content);
-        const blockType = (block.handle || block.name).toLowerCase().replace(/\s+/g, '-');
-        blockTemplates.set(blockType, { content, schema });
-      }
-    });
+interface Block {
+  id: string;
+  type: string;
+  settings: Record<string, any>;
+}
 
-    const sectionsHtml = pageContent.order.length > 0 ? 
-      await Promise.all(
-        pageContent.order.map(async (sectionId: string) => {
-          const section = pageContent.sections[sectionId];
+export async function renderPage(pageContent: PageContent) {
+  try {
+    // Transform sections object into ordered array
+    const orderedSections = pageContent.order.map(sectionId => ({
+      id: sectionId,
+      ...pageContent.sections[sectionId],
+      // Transform blocks object into array
+      blocks: pageContent.sections[sectionId].blocks 
+        ? Object.entries(pageContent.sections[sectionId].blocks!).map(([blockId, block]) => ({
+            id: blockId,
+            ...block
+          }))
+        : []
+    }));
 
-          // Try to find section by name or handle
-          const sectionAsset = sections.find(s => {
-            const sectionType = section.type.toLowerCase().replace(/\s+/g, '-');
-            const assetName = (s.name || '').toLowerCase().replace(/\s+/g, '-');
-            const assetHandle = (s.handle || '').toLowerCase().replace(/\s+/g, '-');
-            return assetName === sectionType || assetHandle === sectionType;
-          });
-
-          if (!sectionAsset || !sectionAsset.content) {
-            return `<div id="shopify-section-${sectionId}" class="shopify-section">
-              <div class="section-${section.type}">Section not found: ${section.type}</div>
-            </div>`;
-          }
-
-          // Process section content and get schema
-          const { content: sectionContent, schema: sectionSchema } = processContent(sectionAsset.content);
-
-          // Create section context with settings merged with defaults
-          const context = {
-            section: {
-              id: sectionId,
-              settings: section.settings || {},
-              blocks: section.blocks ? Object.entries(section.blocks).map(([blockId, block]) => {
-                if (!block || typeof block !== 'object' || !('type' in block)) {
-                  return null;
-                }
-                const blockType = block.type.toString().toLowerCase().replace(/\s+/g, '-');
-                const template = blockTemplates.get(blockType);
-                const blockSettings = 'settings' in block && typeof block.settings === 'object' ? block.settings : {};
-                const blockSource = 'source' in block ? block.source : 'section';
-                
-                if (template?.schema?.settings) {
-                  // Merge block settings with defaults from schema
-                  const defaultSettings = template.schema.settings.reduce((acc, setting) => {
-                    if ('default' in setting) {
-                      acc[setting.id] = setting.default;
-                    }
-                    return acc;
-                  }, {});
-                  return {
-                    type: blockType,
-                    source: blockSource,
-                    settings: { ...defaultSettings, ...blockSettings },
-                    shopify_attributes: ''
-                  };
-                }
-                return {
-                  type: blockType,
-                  source: blockSource,
-                  settings: blockSettings,
-                  shopify_attributes: ''
-                };
-              }).filter(Boolean) : []
-            }
-          };
-
-          // Register block rendering tag
-          engine.registerTag('render_block', {
-            parse(token) {
-              this.templates = blockTemplates;
-              this.args = token.args;
-            },
-            async render(context) {
-              const block = await this.liquid.evalValue(this.args, context);
-              if (!block) return '';
-              
-              const template = this.templates.get(block.type);
-              if (!template) {
-                console.log(`No template found for block type: ${block.type}`);
-                return '';
-              }
-              return this.liquid.parseAndRender(template.content, { 
-                block,
-                settings: block.settings
-              });
-            }
-          });
-
-          // If section has schema settings, merge with defaults
-          if (sectionSchema?.settings) {
-            const defaultSettings = sectionSchema.settings.reduce((acc, setting) => {
-              if ('default' in setting) {
-                acc[setting.id] = setting.default;
-              }
-              return acc;
-            }, {});
-            context.section.settings = { ...defaultSettings, ...context.section.settings };
-          }
-
-          try {
-            // First render the section template
-            const template = await engine.parseAndRender(sectionContent, context);
-
-            return `<div id="shopify-section-${sectionId}" class="shopify-section">
-              <div class="section-${section.type}">
-                ${template}
+    const sectionsHtml = orderedSections.map(section => {
+      return `<div id="shopify-section-${section.id}" class="shopify-section">
+        <div class="section-${section.type}">
+          <div class="section__content">
+            ${section.blocks?.map(block => `
+              <div id="block-${block.id}" class="block-${block.type}">
+                ${renderBlock(block)}
               </div>
-            </div>`;
-          } catch (renderError) {
-            console.error('Error rendering section:', renderError);
-            return `<div class="error">Error rendering section: ${section.type}<br>Error: ${renderError.message}</div>`;
-          }
-        })
-      ) : 
-      [`<div class="shopify-section empty-page">
-          <div class="page-width">
-            <div class="section">
-              <p style="text-align: center; padding: 4rem 0; color: #666;">
-                No sections added yet. Use the customizer to add sections to your page.
-              </p>
-            </div>
+            `).join('\n') || ''}
           </div>
-        </div>`];
+        </div>
+      </div>`;
+    });
 
     return sectionsHtml.join('\n');
   } catch (error) {
     console.error('Error rendering page:', error);
     throw error;
   }
+}
+
+function renderBlock(block: Block): string {
+  // For now, just show block type and settings
+  return `
+    <div class="block__content">
+      <h3>${block.type}</h3>
+      <pre>${JSON.stringify(block.settings, null, 2)}</pre>
+    </div>
+  `;
 } 

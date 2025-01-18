@@ -1,10 +1,13 @@
 import { ButtonGroup, Button, Text } from "@shopify/polaris";
 import { Form } from "@remix-run/react";
 import { ChevronLeftIcon, DesktopIcon, TabletIcon, MobileIcon } from "@shopify/polaris-icons";
-import type { ThemeAsset } from "@prisma/client";
 
 interface PublishingBarProps {
-  asset: ThemeAsset;
+  asset: {
+    id: string;
+    name: string;
+    isActive: boolean;
+  };
   hasChanges?: boolean;
   shop: string;
   onBack: () => void;
@@ -69,7 +72,7 @@ export function PublishingBar({
           <Button onClick={onVersionHistory}>
             History
           </Button>
-          <Button url={`https://${shop}/a/pages/${asset.handle}?preview=true`} target="_blank">
+          <Button url={`https://${shop}/a/pages/${asset.name.toLowerCase().replace(/\s+/g, '-')}?preview=true`} target="_blank">
             Preview
           </Button>
           {asset.isActive ? (
