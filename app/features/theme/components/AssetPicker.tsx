@@ -30,65 +30,104 @@ export function AssetPicker({
     currentSectionId
   });
 
-  const tabs = [
+  const tabs = mode === 'section' ? [
+    {
+      id: 'common',
+      content: `Common sections (${tabCounts.common})`,
+      accessibilityLabel: 'Common sections',
+      panelID: 'common-panel'
+    },
+    {
+      id: 'custom',
+      content: `Custom sections (${tabCounts.custom})`,
+      accessibilityLabel: 'Custom sections',
+      panelID: 'custom-panel'
+    }
+  ] : [
     {
       id: 'block',
-      content: `Section Blocks (${tabCounts.block ?? 0})`,
-      accessibilityLabel: 'Section Blocks',
+      content: `Section (${tabCounts.block ?? 0})`,
+      accessibilityLabel: 'Section blocks',
       panelID: 'section-panel'
     },
     {
       id: 'custom',
-      content: `Custom Blocks (${tabCounts.custom})`,
-      accessibilityLabel: 'Custom Blocks',
+      content: `Custom (${tabCounts.custom})`,
+      accessibilityLabel: 'Custom blocks',
       panelID: 'custom-panel'
     },
     {
       id: 'common',
-      content: `Common Blocks (${tabCounts.common})`,
-      accessibilityLabel: 'Common Blocks',
+      content: `Common (${tabCounts.common})`,
+      accessibilityLabel: 'Common blocks',
       panelID: 'common-panel'
     }
   ];
 
   return (
-    <div style={{ padding: '16px' }}>
-      <div style={{ width: '568px' }}>
-        <div style={{ marginBottom: '16px' }}>
-          <Tabs
-            tabs={tabs}
-            selected={tabs.findIndex(tab => tab.id === activeTab)}
-            onSelect={index => setActiveTab(tabs[index].id as 'block' | 'custom' | 'common')}
-            fitted
-          />
+    <div style={{ padding: '8px' }}>
+      <div>
+        <div style={{ marginBottom: '8px' }}>
+          <Box padding="0">
+            <Tabs
+              tabs={tabs}
+              selected={tabs.findIndex(tab => tab.id === activeTab)}
+              onSelect={index => setActiveTab(tabs[index].id as 'block' | 'custom' | 'common')}
+              fitted
+            />
+          </Box>
         </div>
 
-        <div style={{ marginBottom: '16px' }}>
+        <style>{`
+          .CompactTabs :global(.Polaris-Tabs-Tab) {
+            min-height: 32px;
+            padding: 4px 8px;
+          }
+        `}</style>
+
+        <div style={{ marginBottom: '8px' }}>
           <TextField
             label="Search"
             value={searchValue}
             onChange={setSearchValue}
             autoComplete="off"
-            placeholder="Search blocks..."
+            placeholder={mode === 'section' ? "Search sections..." : "Search blocks..."}
             labelHidden
           />
         </div>
 
-        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        <div style={{ 
+          maxHeight: '400px', 
+          overflowY: 'auto',
+          borderRadius: 'var(--p-border-radius-200)',
+          background: 'var(--p-surface)'
+        }}>
           {filteredAssets.map(item => (
             <div
               key={item.id}
               style={{
-                padding: '8px',
+                padding: 'var(--p-space-200)',
                 borderBottom: '1px solid var(--p-border)',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                backgroundColor: 'var(--p-surface)',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--p-surface-hovered)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--p-surface)';
               }}
               onClick={() => {
                 onSelect(item);
                 onClose();
               }}
             >
-              <div>{item.name}</div>
+              <div style={{ 
+                fontSize: '14px',
+                color: 'var(--p-text)'
+              }}>
+                {item.name}
+              </div>
             </div>
           ))}
         </div>

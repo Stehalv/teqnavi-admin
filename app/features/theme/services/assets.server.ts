@@ -48,7 +48,7 @@ export async function loadFileAssets(type: 'section' | 'block', shopId: string):
         handle: name,
         renderedHtml: null,
         html: null,
-        source: type === 'section' ? 'section' : 'common'
+        source: 'common'
       };
     })
   );

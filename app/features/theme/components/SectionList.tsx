@@ -46,18 +46,8 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
   const [settingsEditor, setSettingsEditor] = useState<SettingsEditorState | null>(null);
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const { isPickerOpen, openPicker, closePicker } = usePickerState();
-  const { sections: fileAssets, blocks: blockAssets } = useAssets({ shopId });
+  const { sections: fileAssets, blocks: blockAssets, assetsMap } = useAssets({ shopId });
   
-  // Combine file and database assets
-  const assets = useMemo(() => {
-    const allAssets = [...fileAssets, ...blockAssets];
-    // Create a map for quick lookup
-    return allAssets.reduce((acc, asset) => {
-      acc[asset.type] = asset;
-      return acc;
-    }, {} as Record<string, ProcessedAsset>);
-  }, [fileAssets, blockAssets]);
-
   const toggleSection = useCallback((sectionId: string) => {
     setCollapsedSections(prev => {
       const next = new Set(prev);
@@ -90,7 +80,7 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
 
     // Add new section with default settings from schema
     newContent.sections[sectionId] = {
-      type: item.id,
+      type: item.type,
       settings: {},  // Start with empty settings, defaults will come from schema
       blocks: {}
     };
@@ -146,13 +136,11 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
       const block = currentSection.blocks?.[settingsEditor.blockId];
       if (!block) return { currentSchema: [], currentValues: [] };
 
-      // Find the block asset and its schema
-      const blockAsset = assets[block.type];
-      console.log('Block Asset:', blockAsset);
+      // Find the block asset and its schema using id
+      const blockAsset = assetsMap[block.type];
       if (!blockAsset?.settings?.schema) return { currentSchema: [], currentValues: [] };
 
       const schema = blockAsset.settings.schema;
-      console.log('Block Schema:', schema);
       return {
         currentSchema: schema,
         currentValues: schema.map(setting => ({
@@ -161,15 +149,11 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
         }))
       };
     } else {
-      // Get section settings
-      const sectionAsset = assets[currentSection.type];
-      console.log('Section Asset:', sectionAsset);
-      console.log('Section Type:', currentSection.type);
-      console.log('Available Assets:', assets);
+      // Get section settings using id
+      const sectionAsset = assetsMap[currentSection.type];
       if (!sectionAsset?.settings?.schema) return { currentSchema: [], currentValues: [] };
 
       const schema = sectionAsset.settings.schema;
-      console.log('Section Schema:', schema);
       return {
         currentSchema: schema,
         currentValues: schema.map(setting => ({
@@ -178,7 +162,7 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
         }))
       };
     }
-  }, [settingsEditor, pageContent, assets]);
+  }, [settingsEditor, pageContent, assetsMap]);
 
   const handleDeleteSection = useCallback((sectionId: string) => {
     const newContent = { ...pageContent };
@@ -215,6 +199,15 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
 
             {settingsEditor && settingsEditor.sectionId === sectionId && !settingsEditor.blockId && (
               <Box padding="400" borderBlockEndWidth="025" borderColor="border">
+                {(() => {
+                  console.log('Section Settings Props:', {
+                    currentSchema,
+                    currentValues,
+                    sectionType: section.type,
+                    asset: assetsMap[section.type]
+                  });
+                  return null;
+                })()}
                 <SettingsEditor
                   settings={currentSchema}
                   values={currentValues}
@@ -256,7 +249,7 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
                       mode="block"
                       assets={blockAssets}
                       buttonText="Add block"
-                      isOpen={isPickerOpen('block')}
+                      isOpen={isPickerOpen('block', sectionId)}
                       onClose={closePicker}
                       onSelect={(item: ProcessedAsset) => {
                         const newContent = { ...pageContent };
@@ -272,7 +265,7 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
                         onContentChange(JSON.stringify(newContent, null, 2));
                         closePicker();
                       }}
-                      onClick={() => openPicker('block')}
+                      onClick={() => openPicker('block', sectionId)}
                     />
                   </Box>
                 </BlockStack>
@@ -285,7 +278,7 @@ export function SectionList({ content, onContentChange, shopId }: SectionListPro
       <Box padding="400">
         <AssetPickerPopover
           mode="section"
-          assets={Object.values(assets)}
+          assets={Object.values(assetsMap)}
           buttonText="Add section"
           isOpen={isPickerOpen('section')}
           onClose={closePicker}

@@ -19,7 +19,6 @@ export function PagePreview({ page, selectedItemId }: PagePreviewProps) {
       try {
         // Parse the page content to get sections and blocks
         const pageContent = JSON.parse(page.content);
-        console.log('PagePreview parsed content:', JSON.stringify(pageContent, null, 2));
         const html = await renderPage(pageContent);
 
         const finalHtml = `
@@ -118,7 +117,6 @@ export function PagePreview({ page, selectedItemId }: PagePreviewProps) {
         setError(null);
         setRenderedContent(finalHtml);
       } catch (error) {
-        console.error('Error rendering page:', error);
         setError(error instanceof Error ? error.message : 'Unknown error');
         setRenderedContent('');
       }

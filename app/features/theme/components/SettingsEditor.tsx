@@ -9,6 +9,8 @@ interface SettingsEditorProps {
 }
 
 export function SettingsEditor({ settings, values, onChange }: SettingsEditorProps) {
+  console.log('SettingsEditor:', { settings, values });
+
   const handleChange = (id: string, value: any) => {
     const newValues = values.map(v => 
       v.id === id ? { ...v, value } : v

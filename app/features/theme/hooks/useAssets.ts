@@ -1,5 +1,5 @@
 import { useFetcher } from "@remix-run/react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import type { ProcessedAsset } from "../types.js";
 
 interface UseAssetsOptions {
@@ -13,6 +13,7 @@ interface UseAssetsReturn {
   blocks: ProcessedAsset[];
   isLoading: boolean;
   reload: () => void;
+  assetsMap: Record<string, ProcessedAsset>;
 }
 
 /**
@@ -34,31 +35,29 @@ export function useAssets({ type, sectionId, shopId }: UseAssetsOptions): UseAss
     loadAssets();
   }, [loadAssets]);
 
-  console.log('Raw Fetcher Data:', fetcher.data);
+  const sections = fetcher.data?.sections.map(section => ({
+    ...section,
+    settings: section.settings || {}
+  })) ?? [];
 
-  const sections = fetcher.data?.sections.map(section => {
-    console.log('Processing Section:', section);
-    return {
-      ...section,
-      settings: section.settings || {}
-    };
-  }) ?? [];
+  const blocks = fetcher.data?.blocks.map(block => ({
+    ...block,
+    settings: block.settings || {}
+  })) ?? [];
 
-  const blocks = fetcher.data?.blocks.map(block => {
-    console.log('Processing Block:', block);
-    return {
-      ...block,
-      settings: block.settings || {}
-    };
-  }) ?? [];
-
-  console.log('Processed Sections:', sections);
-  console.log('Processed Blocks:', blocks);
+  const assetsMap = useMemo(() => {
+    const allAssets = [...sections, ...blocks];
+    return allAssets.reduce((acc, asset) => {
+      acc[asset.id] = asset;
+      return acc;
+    }, {} as Record<string, ProcessedAsset>);
+  }, [sections, blocks]);
 
   return {
     sections,
     blocks,
     isLoading: fetcher.state === 'loading',
-    reload: loadAssets
+    reload: loadAssets,
+    assetsMap
   };
 } 

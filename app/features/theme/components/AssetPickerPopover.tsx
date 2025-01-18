@@ -1,4 +1,4 @@
-import { Popover, Button } from "@shopify/polaris";
+import { Popover, Button, Box } from "@shopify/polaris";
 import { PlusIcon } from "@shopify/polaris-icons";
 import type { ProcessedAsset } from "../types.js";
 import { AssetPicker } from "./AssetPicker.js";
@@ -41,20 +41,30 @@ export function AssetPickerPopover({
       preferredAlignment="left"
       preferredPosition="below"
     >
-      <div style={{ 
-        minWidth: '320px',
-        maxWidth: '400px',
-        maxHeight: '500px',
-        overflow: 'auto'
-      }}>
-        <AssetPicker
-          mode={mode}
-          assets={assets}
-          onSelect={onSelect}
-          onClose={onClose}
-          currentSectionId={currentSectionId}
-        />
+      <div className="Polaris-Popover__Content">
+        <div style={{ 
+          width: mode === 'section' ? '400px' : '600px',
+          maxHeight: '500px',
+          overflow: 'auto',
+          minWidth: mode === 'section' ? '400px' : '600px'
+        }}>
+          <AssetPicker
+            mode={mode}
+            assets={assets}
+            onSelect={onSelect}
+            onClose={onClose}
+            currentSectionId={currentSectionId}
+          />
+        </div>
       </div>
+      <style>{`
+        .Polaris-Popover, 
+        .Polaris-Popover__Content,
+        .Polaris-Popover__Pane {
+          width: auto !important;
+          max-width: none !important;
+        }
+      `}</style>
     </Popover>
   );
 } 
