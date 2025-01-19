@@ -56,27 +56,10 @@ export default function App() {
             selected: location.pathname.startsWith("/app/flows"),
           },
           {
-            label: "Theme Editor",
-            url: `/app/theme?host=${host}`,
-            selected: location.pathname.startsWith("/app/theme"),
-            subNavigationItems: [
-              {
-                label: "Page Builder",
-                url: `/app/theme/pagebuilder?host=${host}`
-              },
-              {
-                label: "Customize",
-                url: `/app/theme/customize?host=${host}`
-              },
-              {
-                label: "Code Editor",
-                url: `/app/theme/assets?host=${host}`
-              },
-              {
-                label: "GPT Section Generator",
-                url: `/app/theme/gpt?host=${host}`
-              }
-            ]
+            label: 'Pagebuilder',
+            url: `/app/Pagebuilder?host=${host}`,
+            selected: location.pathname.startsWith("/app/Pagebuilder"),
+            icon: TransferOutIcon,
           },
           {
             label: 'Integrations',

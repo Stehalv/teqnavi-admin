@@ -25,84 +25,41 @@ model Session {
   emailVerified Boolean?  @default(false)
 }
 
-model enrollmentflow {
-  id          String    @id @default(cuid())
-  shopId      String
-  name        String
-  description String?
-  isActive    Boolean   @default(false)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  elements    element[]
-  steps       step[]
 
-  @@map("enrollment_flows")
-}
 
-model step {
-  id        String         @id @default(cuid())
-  flowId    String
-  name      String
-  order     Int
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  elements  element[]
-  flow      enrollmentflow @relation(fields: [flowId], references: [id])
+model Page {
+  id            String    @id @default(cuid())
+  shopId        String
+  title         String
+  handle        String
+  template      String    @default("page")
+  sections      String    @db.Text @default("{}")  // Stores section data as JSON string
+  section_order String    @db.Text @default("[]")  // Stores array of section IDs as JSON string
+  settings      String    @db.Text @default("{}")  // Stores page settings as JSON string
+  isPublished   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  versions      PageVersion[]
 
-  @@map("steps")
-}
-
-model element {
-  id        String         @id @default(uuid())
-  type      String
-  label     String
-  config    String         @default("{}")
-  order     Int
-  flowId    String
-  stepId    String
-  createdAt DateTime       @default(now())
-  updatedAt DateTime       @updatedAt
-  flow      enrollmentflow @relation(fields: [flowId], references: [id], onUpdate: NoAction)
-  step      step           @relation(fields: [stepId], references: [id], onUpdate: NoAction)
-
-  @@map("elements")
-}
-
-model ThemeAsset {
-  id              String             @id @default(cuid())
-  shopId          String             @default("teqnavi-demo-store-1.myshopify.com")
-  type            String
-  name            String
-  handle          String?
-  content         String             @db.Text
-  settings        String             @db.Text @default("{}")
-  template_format String             @default("liquid")
-  isActive        Boolean            @default(false)
-  renderedHtml    String?            @db.Text
-  html            String?            @db.Text
-  createdAt       DateTime           @default(now())
-  updatedAt       DateTime           @updatedAt
-  versions        ThemeAssetVersion[]
-
-  @@unique([shopId, handle], name: "shopHandle")
-  @@unique([shopId, name, type], name: "shopNameType")
+  @@unique([shopId, handle])
   @@index([shopId])
+  @@map("pages")
 }
 
-model ThemeAssetVersion {
-  id            String      @id @default(cuid())
-  themeAssetId  String
-  versionNumber Int
-  content       String      @db.Text
-  settings      String      @db.Text @default("{}")
-  renderedHtml  String?     @db.Text
-  html          String?     @db.Text
+model PageVersion {
+  id            String    @id @default(cuid())
+  pageId        String
+  version       Int
+  sections      String    @db.Text @default("{}")
+  section_order String    @db.Text @default("[]")
+  settings      String    @db.Text @default("{}")
   message       String?
-  createdAt     DateTime    @default(now())
+  createdAt     DateTime  @default(now())
   createdBy     String?
-  isLatest      Boolean     @default(false)
-  themeAsset    ThemeAsset  @relation(fields: [themeAssetId], references: [id], onDelete: Cascade)
+  isLatest      Boolean   @default(false)
+  page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
-  @@unique([themeAssetId, versionNumber])
-  @@index([themeAssetId])
+  @@unique([pageId, version])
+  @@index([pageId])
+  @@map("page_versions")
 }

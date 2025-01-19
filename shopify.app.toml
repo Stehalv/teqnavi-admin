@@ -1,7 +1,7 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
 client_id = "94b7433443be5e84e0e06ebbfe875a6d"
-application_url = "https://nashville-mostly-planned-hello.trycloudflare.com"
+application_url = "https://childhood-modern-prove-spa.trycloudflare.com"
 embedded = true
 name = "Teqnavi-Admin"
 handle = "teqnavi-admin"
@@ -28,13 +28,13 @@ scopes = "read_customers,read_orders,read_products,read_script_tags,write_produc
 
 [auth]
 redirect_urls = [
-  "https://nashville-mostly-planned-hello.trycloudflare.com/auth/callback",
-  "https://nashville-mostly-planned-hello.trycloudflare.com/auth/shopify/callback",
-  "https://nashville-mostly-planned-hello.trycloudflare.com/api/auth/callback"
+  "https://childhood-modern-prove-spa.trycloudflare.com/auth/callback",
+  "https://childhood-modern-prove-spa.trycloudflare.com/auth/shopify/callback",
+  "https://childhood-modern-prove-spa.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://nashville-mostly-planned-hello.trycloudflare.com"
+url = "https://childhood-modern-prove-spa.trycloudflare.com"
 subpath = "pages"
 prefix = "a"
 
