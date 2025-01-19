@@ -2,9 +2,93 @@ import React, { memo, useCallback } from "react";
 import { Card, BlockStack, FormLayout, TextField, Select, Button, Box, Text, ColorPicker, RangeSlider, Checkbox, Banner, InlineStack } from "@shopify/polaris";
 import { usePageBuilder } from "../../context/PageBuilderContext.js";
 import type { Section, Block } from "../../types.js";
-import { SECTION_SETTINGS, BLOCK_SETTINGS, type SettingField } from "../../config/settings.js";
+import {
+  SECTION_SETTINGS,
+  BLOCK_SETTINGS,
+} from "../../config/settings.js";
+import type {
+  SettingField,
+  CheckboxField,
+  NumberField,
+  RadioField,
+  RangeField,
+  SelectField,
+  TextField as TextFieldType,
+  TextAreaField,
+  FontPickerField,
+  LinkListField,
+  LiquidField,
+  MetaobjectField,
+  MetaobjectListField,
+  ColorField,
+  ColorBackgroundField,
+  ColorSchemeField,
+  ColorSchemeGroupField,
+  TextAlignmentField,
+  UrlField,
+  ImagePickerField,
+  VideoField,
+  VideoUrlField,
+  ArticleField,
+  BlogField,
+  CollectionField,
+  CollectionListField,
+  PageField,
+  ProductField,
+  ProductListField,
+  HtmlField,
+  InlineRichTextField,
+  RichTextField
+} from "../../types/settings.js";
 import { ImageUploader } from "../ImageUploader/ImageUploader.js";
 import styles from "./SettingsPanel.module.css";
+
+// Import all input components
+import {
+  CheckboxInput,
+  NumberInput,
+  RadioInput,
+  RangeInput,
+  SelectInput,
+  TextInput,
+  TextAreaInput
+} from "./components/inputs/BasicInputs.js";
+import {
+  FontPickerInput,
+  LinkListInput,
+  LiquidInput,
+  MetaobjectInput,
+  MetaobjectListInput
+} from "./components/inputs/AdvancedInputs.js";
+import {
+  ColorInput,
+  ColorBackgroundInput,
+  ColorSchemeInput,
+  ColorSchemeGroupInput
+} from "./components/inputs/ColorInputs.js";
+import {
+  TextAlignmentInput,
+  UrlInput
+} from "./components/inputs/LayoutInputs.js";
+import {
+  ImagePickerInput,
+  VideoInput,
+  VideoUrlInput
+} from "./components/inputs/MediaInputs.js";
+import {
+  ArticlePicker,
+  BlogPicker,
+  CollectionPicker,
+  CollectionListPicker,
+  PagePicker,
+  ProductPicker,
+  ProductListPicker
+} from "./components/inputs/ResourcePickers.js";
+import {
+  HtmlInput,
+  InlineRichTextInput,
+  RichTextInput
+} from "./components/inputs/RichContentInputs.js";
 
 const EmptyState = memo(function EmptyState() {
   return (
@@ -32,109 +116,81 @@ const SettingFieldRenderer = memo(function SettingFieldRenderer({
   }, [field.key, onChange]);
 
   switch (field.type) {
-    case "text":
-      return (
-        <TextField
-          key={field.key}
-          label={
-            <>
-              {field.label}
-              {field.required && <span className={styles.required}>*</span>}
-            </>
-          }
-          value={value ?? field.defaultValue}
-          onChange={handleChange}
-          autoComplete="off"
-          multiline={field.multiline}
-          placeholder={field.placeholder}
-          maxLength={field.maxLength}
-          helpText={field.helpText}
-        />
-      );
-
-    case "select":
-      return (
-        <Select
-          key={field.key}
-          label={
-            <>
-              {field.label}
-              {field.required && <span className={styles.required}>*</span>}
-            </>
-          }
-          options={field.options}
-          value={value ?? field.defaultValue}
-          onChange={handleChange}
-          helpText={field.helpText}
-        />
-      );
-
+    // Basic inputs
+    case "checkbox":
+      return <CheckboxInput field={field as CheckboxField} value={value} onChange={handleChange} />;
     case "number":
-      return (
-        <RangeSlider
-          key={field.key}
-          label={field.label}
-          value={value ?? field.defaultValue}
-          min={field.min}
-          max={field.max}
-          step={field.step}
-          onChange={handleChange}
-          output
-          helpText={field.helpText}
-          suffix={field.unit}
-        />
-      );
+      return <NumberInput field={field as NumberField} value={value} onChange={handleChange} />;
+    case "radio":
+      return <RadioInput field={field as RadioField} value={value} onChange={handleChange} />;
+    case "range":
+      return <RangeInput field={field as RangeField} value={value} onChange={handleChange} />;
+    case "select":
+      return <SelectInput field={field as SelectField} value={value} onChange={handleChange} />;
+    case "text":
+      return <TextInput field={field as TextFieldType} value={value} onChange={handleChange} />;
+    case "textarea":
+      return <TextAreaInput field={field as TextAreaField} value={value} onChange={handleChange} />;
 
+    // Advanced inputs
+    case "font_picker":
+      return <FontPickerInput field={field as FontPickerField} value={value} onChange={handleChange} />;
+    case "link_list":
+      return <LinkListInput field={field as LinkListField} value={value} onChange={handleChange} />;
+    case "liquid":
+      return <LiquidInput field={field as LiquidField} value={value} onChange={handleChange} />;
+    case "metaobject":
+      return <MetaobjectInput field={field as MetaobjectField} value={value} onChange={handleChange} />;
+    case "metaobject_list":
+      return <MetaobjectListInput field={field as MetaobjectListField} value={value} onChange={handleChange} />;
+
+    // Color inputs
     case "color":
-      return (
-        <Box key={field.key}>
-          <Text as="p" variant="bodyMd">
-            {field.label}
-            {field.required && <span className={styles.required}>*</span>}
-          </Text>
-          <Box paddingBlockStart="200">
-            <ColorPicker
-              onChange={handleChange}
-              color={value ?? field.defaultValue}
-              allowAlpha={field.allowAlpha}
-            />
-          </Box>
-          {field.helpText && (
-            <Box paddingBlockStart="200">
-              <Text as="p" variant="bodySm" tone="subdued">
-                {field.helpText}
-              </Text>
-            </Box>
-          )}
-        </Box>
-      );
+      return <ColorInput field={field as ColorField} value={value} onChange={handleChange} />;
+    case "color_background":
+      return <ColorBackgroundInput field={field as ColorBackgroundField} value={value} onChange={handleChange} />;
+    case "color_scheme":
+      return <ColorSchemeInput field={field as ColorSchemeField} value={value} onChange={handleChange} />;
+    case "color_scheme_group":
+      return <ColorSchemeGroupInput field={field as ColorSchemeGroupField} value={value} onChange={handleChange} />;
 
-    case "image":
-      return (
-        <ImageUploader
-          key={field.key}
-          label={field.label}
-          value={value ?? field.defaultValue}
-          onChange={handleChange}
-          maxSize={field.maxSize}
-          aspectRatio={field.aspectRatio}
-          allowedTypes={field.allowedTypes}
-          helpText={field.helpText}
-          required={field.required}
-        />
-      );
+    // Layout inputs
+    case "text_alignment":
+      return <TextAlignmentInput field={field as TextAlignmentField} value={value} onChange={handleChange} />;
+    case "url":
+      return <UrlInput field={field as UrlField} value={value} onChange={handleChange} />;
 
-    case "toggle":
-      return (
-        <Box key={field.key} padding="200">
-          <Checkbox
-            label={field.label}
-            checked={value ?? field.defaultValue}
-            onChange={handleChange}
-            helpText={field.helpText}
-          />
-        </Box>
-      );
+    // Media inputs
+    case "image_picker":
+      return <ImagePickerInput field={field as ImagePickerField} value={value} onChange={handleChange} />;
+    case "video":
+      return <VideoInput field={field as VideoField} value={value} onChange={handleChange} />;
+    case "video_url":
+      return <VideoUrlInput field={field as VideoUrlField} value={value} onChange={handleChange} />;
+
+    // Resource pickers
+    case "article":
+      return <ArticlePicker field={field as ArticleField} value={value} onChange={handleChange} />;
+    case "blog":
+      return <BlogPicker field={field as BlogField} value={value} onChange={handleChange} />;
+    case "collection":
+      return <CollectionPicker field={field as CollectionField} value={value} onChange={handleChange} />;
+    case "collection_list":
+      return <CollectionListPicker field={field as CollectionListField} value={value} onChange={handleChange} />;
+    case "page":
+      return <PagePicker field={field as PageField} value={value} onChange={handleChange} />;
+    case "product":
+      return <ProductPicker field={field as ProductField} value={value} onChange={handleChange} />;
+    case "product_list":
+      return <ProductListPicker field={field as ProductListField} value={value} onChange={handleChange} />;
+
+    // Rich content inputs
+    case "html":
+      return <HtmlInput field={field as HtmlField} value={value} onChange={handleChange} />;
+    case "inline_richtext":
+      return <InlineRichTextInput field={field as InlineRichTextField} value={value} onChange={handleChange} />;
+    case "richtext":
+      return <RichTextInput field={field as RichTextField} value={value} onChange={handleChange} />;
 
     default:
       return (
@@ -580,11 +636,11 @@ export const SettingsPanel = memo(function SettingsPanel() {
 
     return (
       <FormLayout>
-        {settings.map((field) => (
+        {settings.map((field: SettingField) => (
           <SettingFieldRenderer
             key={field.key}
             field={field}
-            value={section.settings[field.key as keyof typeof section.settings]}
+            value={(section.settings as Record<string, unknown>)[field.key]}
             onChange={handleSectionSettingChange}
           />
         ))}
@@ -598,11 +654,11 @@ export const SettingsPanel = memo(function SettingsPanel() {
 
     return (
       <FormLayout>
-        {settings.map((field) => (
+        {settings.map((field: SettingField) => (
           <SettingFieldRenderer
             key={field.key}
             field={field}
-            value={block.settings[field.key as keyof typeof block.settings]}
+            value={(block.settings as Record<string, unknown>)[field.key]}
             onChange={handleBlockSettingChange}
           />
         ))}
@@ -619,7 +675,16 @@ export const SettingsPanel = memo(function SettingsPanel() {
               <Text variant="headingMd" as="h2">Page Settings</Text>
             </Box>
             <Box padding="400">
-              {renderPageSettings()}
+              <FormLayout>
+                {SECTION_SETTINGS.page?.map((field: SettingField) => (
+                  <SettingFieldRenderer
+                    key={field.key}
+                    field={field}
+                    value={(page.settings as Record<string, any>)[field.key]}
+                    onChange={handlePageSettingChange}
+                  />
+                ))}
+              </FormLayout>
             </Box>
           </BlockStack>
         </Card>

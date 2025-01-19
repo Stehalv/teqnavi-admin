@@ -1,274 +1,297 @@
-import type { SectionType, BlockType } from "../types.js";
+import type { SettingField } from '../types/settings.js';
 
-export interface BaseSettingField {
-  key: string;
-  label: string;
-  helpText?: string;
-  required?: boolean;
-  defaultValue?: any;
-}
-
-export interface TextField extends BaseSettingField {
-  type: "text";
-  multiline?: boolean;
-  placeholder?: string;
-  maxLength?: number;
-}
-
-export interface SelectField extends BaseSettingField {
-  type: "select";
-  options: Array<{ label: string; value: string }>;
-}
-
-export interface NumberField extends BaseSettingField {
-  type: "number";
-  min?: number;
-  max?: number;
-  step?: number;
-  unit?: string;
-}
-
-export interface ColorField extends BaseSettingField {
-  type: "color";
-  allowAlpha?: boolean;
-}
-
-export interface ImageField extends BaseSettingField {
-  type: "image";
-  maxSize?: number; // in bytes
-  aspectRatio?: number;
-  allowedTypes?: string[]; // e.g., ["image/jpeg", "image/png"]
-}
-
-export interface ToggleField extends BaseSettingField {
-  type: "toggle";
-  labelOn?: string;
-  labelOff?: string;
-}
-
-export type SettingField = 
-  | TextField 
-  | SelectField 
-  | NumberField 
-  | ColorField 
-  | ImageField 
-  | ToggleField;
-
-export const SECTION_SETTINGS: Record<SectionType, SettingField[]> = {
+export const SECTION_SETTINGS: Record<string, SettingField[]> = {
+  page: [
+    {
+      key: 'layout',
+      type: 'select',
+      label: 'Layout',
+      options: [
+        { label: 'Full Width', value: 'full-width' },
+        { label: 'Contained', value: 'contained' }
+      ]
+    },
+    {
+      key: 'spacing',
+      type: 'range',
+      label: 'Section Spacing',
+      min: 0,
+      max: 100,
+      step: 4
+    },
+    {
+      key: 'seo_title',
+      type: 'text',
+      label: 'SEO Title',
+      helpText: 'The title that appears in search engine results'
+    },
+    {
+      key: 'seo_description',
+      type: 'textarea',
+      label: 'SEO Description',
+      helpText: 'The description that appears in search engine results',
+      maxLength: 160
+    },
+    {
+      key: 'url_handle',
+      type: 'url',
+      label: 'URL Handle',
+      suggestInternal: true
+    }
+  ],
   hero: [
     {
-      key: "heading",
-      type: "text",
-      label: "Heading",
-      required: true,
-      placeholder: "Enter heading text...",
-      defaultValue: "Welcome to our store"
+      key: 'heading',
+      type: 'text',
+      label: 'Heading'
     },
     {
-      key: "subheading",
-      type: "text",
-      label: "Subheading",
-      multiline: true,
-      placeholder: "Enter subheading text...",
-      defaultValue: "Shop the latest trends"
+      key: 'subheading',
+      type: 'textarea',
+      label: 'Subheading'
     },
     {
-      key: "button_text",
-      type: "text",
-      label: "Button Text",
-      placeholder: "Shop Now",
-      defaultValue: "Shop Now"
+      key: 'background_type',
+      type: 'select',
+      label: 'Background Type',
+      options: [
+        { label: 'Color', value: 'color' },
+        { label: 'Image', value: 'image' },
+        { label: 'Video', value: 'video' }
+      ]
     },
     {
-      key: "button_link",
-      type: "text",
-      label: "Button Link",
-      placeholder: "/collections/all",
-      defaultValue: "/collections/all"
-    },
-    {
-      key: "background_color",
-      type: "color",
-      label: "Background Color",
+      key: 'background_color',
+      type: 'color_background',
+      label: 'Background Color',
       allowAlpha: true,
-      defaultValue: "#000000"
+      allowGradient: true
     },
     {
-      key: "text_color",
-      type: "color",
-      label: "Text Color",
-      defaultValue: "#ffffff"
+      key: 'background_image',
+      type: 'image_picker',
+      label: 'Background Image',
+      aspectRatio: 16/9
+    },
+    {
+      key: 'background_video',
+      type: 'video_url',
+      label: 'Background Video',
+      accept: ['youtube', 'vimeo']
+    },
+    {
+      key: 'text_color',
+      type: 'color',
+      label: 'Text Color'
+    },
+    {
+      key: 'content_width',
+      type: 'select',
+      label: 'Content Width',
+      options: [
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' },
+        { label: 'Full', value: 'full' }
+      ]
+    },
+    {
+      key: 'overlay_opacity',
+      type: 'range',
+      label: 'Overlay Opacity',
+      min: 0,
+      max: 1,
+      step: 0.1
     }
   ],
-  "featured-collection": [
+  'featured-collection': [
     {
-      key: "title",
-      type: "text",
-      label: "Title",
-      required: true,
-      placeholder: "Featured Products",
-      defaultValue: "Featured Products"
+      key: 'title',
+      type: 'text',
+      label: 'Title'
     },
     {
-      key: "collection",
-      type: "select",
-      label: "Collection",
-      required: true,
-      options: [
-        { label: "Home page", value: "frontpage" },
-        { label: "All products", value: "all" }
-      ],
-      defaultValue: "frontpage"
+      key: 'collection',
+      type: 'collection',
+      label: 'Collection'
     },
     {
-      key: "products_to_show",
-      type: "number",
-      label: "Products to Show",
+      key: 'products_to_show',
+      type: 'range',
+      label: 'Products to Show',
       min: 2,
       max: 12,
-      step: 1,
-      defaultValue: 4
+      step: 1
     },
     {
-      key: "show_view_all",
-      type: "toggle",
-      label: "Show View All Link",
-      defaultValue: true
+      key: 'columns_desktop',
+      type: 'select',
+      label: 'Desktop Columns',
+      options: [
+        { label: '2 Columns', value: '2' },
+        { label: '3 Columns', value: '3' },
+        { label: '4 Columns', value: '4' },
+        { label: '5 Columns', value: '5' }
+      ]
+    },
+    {
+      key: 'columns_mobile',
+      type: 'select',
+      label: 'Mobile Columns',
+      options: [
+        { label: '1 Column', value: '1' },
+        { label: '2 Columns', value: '2' }
+      ]
+    },
+    {
+      key: 'show_view_all',
+      type: 'checkbox',
+      label: 'Show View All Button'
     }
-  ],
-  "rich-text": [],
-  "image-with-text": [],
-  "newsletter": []
+  ]
 };
 
-export const BLOCK_SETTINGS: Record<BlockType, SettingField[]> = {
+export const BLOCK_SETTINGS: Record<string, SettingField[]> = {
   text: [
     {
-      key: "text",
-      type: "text",
-      label: "Text Content",
-      required: true,
-      multiline: true,
-      placeholder: "Enter text content...",
-      defaultValue: ""
+      key: 'text',
+      type: 'richtext',
+      label: 'Text Content'
     },
     {
-      key: "alignment",
-      type: "select",
-      label: "Text Alignment",
+      key: 'size',
+      type: 'select',
+      label: 'Text Size',
       options: [
-        { label: "Left", value: "left" },
-        { label: "Center", value: "center" },
-        { label: "Right", value: "right" }
-      ],
-      defaultValue: "left"
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' }
+      ]
     },
     {
-      key: "size",
-      type: "select",
-      label: "Text Size",
-      options: [
-        { label: "Small", value: "small" },
-        { label: "Medium", value: "medium" },
-        { label: "Large", value: "large" }
-      ],
-      defaultValue: "medium"
+      key: 'alignment',
+      type: 'text_alignment',
+      label: 'Alignment'
     },
     {
-      key: "color",
-      type: "color",
-      label: "Text Color",
-      defaultValue: "#000000"
+      key: 'color',
+      type: 'color',
+      label: 'Text Color'
     }
   ],
   image: [
     {
-      key: "image",
-      type: "image",
-      label: "Image",
-      required: true,
-      maxSize: 5 * 1024 * 1024,
-      allowedTypes: ["image/jpeg", "image/png", "image/webp"]
+      key: 'image',
+      type: 'image_picker',
+      label: 'Image'
     },
     {
-      key: "alt",
-      type: "text",
-      label: "Alt Text",
-      required: true,
-      placeholder: "Describe the image..."
+      key: 'alt',
+      type: 'text',
+      label: 'Alt Text'
     },
     {
-      key: "overlay_opacity",
-      type: "number",
-      label: "Overlay Opacity",
+      key: 'aspect_ratio',
+      type: 'select',
+      label: 'Aspect Ratio',
+      options: [
+        { label: 'Square (1:1)', value: '1/1' },
+        { label: '4:3', value: '4/3' },
+        { label: '16:9', value: '16/9' },
+        { label: 'Original', value: 'original' }
+      ]
+    },
+    {
+      key: 'overlay_opacity',
+      type: 'range',
+      label: 'Overlay Opacity',
       min: 0,
       max: 1,
-      step: 0.1,
-      defaultValue: 0
+      step: 0.1
     }
   ],
   button: [
     {
-      key: "text",
-      type: "text",
-      label: "Button Text",
-      required: true,
-      placeholder: "Click here",
-      defaultValue: "Click here"
+      key: 'text',
+      type: 'text',
+      label: 'Button Text'
     },
     {
-      key: "link",
-      type: "text",
-      label: "Button Link",
-      required: true,
-      placeholder: "/",
-      defaultValue: "/"
+      key: 'link',
+      type: 'url',
+      label: 'Button Link'
     },
     {
-      key: "style",
-      type: "select",
-      label: "Button Style",
+      key: 'style',
+      type: 'select',
+      label: 'Style',
       options: [
-        { label: "Primary", value: "primary" },
-        { label: "Secondary", value: "secondary" }
-      ],
-      defaultValue: "primary"
+        { label: 'Primary', value: 'primary' },
+        { label: 'Secondary', value: 'secondary' },
+        { label: 'Plain', value: 'plain' }
+      ]
     },
     {
-      key: "size",
-      type: "select",
-      label: "Button Size",
+      key: 'size',
+      type: 'select',
+      label: 'Size',
       options: [
-        { label: "Small", value: "small" },
-        { label: "Large", value: "large" }
-      ],
-      defaultValue: "small"
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' }
+      ]
+    },
+    {
+      key: 'full_width',
+      type: 'checkbox',
+      label: 'Full Width'
+    },
+    {
+      key: 'open_in_new_tab',
+      type: 'checkbox',
+      label: 'Open in New Tab'
     }
   ],
   product: [
     {
-      key: "product_id",
-      type: "text",
-      label: "Product ID",
-      required: true
+      key: 'product',
+      type: 'product',
+      label: 'Product'
     },
     {
-      key: "show_price",
-      type: "toggle",
-      label: "Show Price",
-      defaultValue: true
+      key: 'show_price',
+      type: 'checkbox',
+      label: 'Show Price'
     },
     {
-      key: "show_vendor",
-      type: "toggle",
-      label: "Show Vendor",
-      defaultValue: true
+      key: 'show_vendor',
+      type: 'checkbox',
+      label: 'Show Vendor'
     },
     {
-      key: "show_rating",
-      type: "toggle",
-      label: "Show Rating",
-      defaultValue: true
+      key: 'show_rating',
+      type: 'checkbox',
+      label: 'Show Rating'
+    },
+    {
+      key: 'show_badges',
+      type: 'checkbox',
+      label: 'Show Badges'
+    },
+    {
+      key: 'enable_quick_add',
+      type: 'checkbox',
+      label: 'Enable Quick Add'
+    },
+    {
+      key: 'image_aspect_ratio',
+      type: 'select',
+      label: 'Image Aspect Ratio',
+      options: [
+        { label: 'Square (1:1)', value: '1/1' },
+        { label: '4:3', value: '4/3' },
+        { label: '16:9', value: '16/9' }
+      ]
     }
   ]
 }; 
