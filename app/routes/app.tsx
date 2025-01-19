@@ -1,11 +1,10 @@
 import type { HeadersFunction, LoaderFunctionArgs } from "@remix-run/node";
-import { Link, Outlet, useLoaderData, useRouteError, useLocation } from "@remix-run/react";
+import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
-import { Frame, Navigation } from "@shopify/polaris";
+import { Frame } from "@shopify/polaris";
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
-import { Suspense, useEffect } from "react";
-import { SettingsIcon, TransferOutIcon } from '@shopify/polaris-icons';
+import { Suspense } from "react";
 
 import { authenticate } from "../shopify.server.js";
 
@@ -15,71 +14,26 @@ export const links = () => [
 
 export const loader = async ({ request }: LoaderFunctionArgs) => {
   const { admin } = await authenticate.admin(request);
+  const url = new URL(request.url);
   return { 
     apiKey: process.env.SHOPIFY_API_KEY || "",
-    host: new URL(request.url).searchParams.get("host")!
+    host: url.searchParams.get("host")!
   };
 };
 
 export default function App() {
-  const { apiKey, host } = useLoaderData<typeof loader>();
-  const location = useLocation();
-
-  useEffect(() => {
-    // Add styles to the head
-    const style = document.createElement('style');
-    style.textContent = `
-      .Polaris-Navigation__Item--subItem {
-        padding-left: 25px !important;
-      }
-    `;
-    document.head.appendChild(style);
-
-    // Cleanup on unmount
-    return () => {
-      document.head.removeChild(style);
-    };
-  }, []);
-
-  const navigationMarkup = (
-    <Navigation location={location.pathname}>
-      <Navigation.Section
-        items={[
-          {
-            label: "Dashboard",
-            url: `/app?host=${host}`,
-            selected: location.pathname === "/app",
-          },
-          {
-            label: "Flow Editor",
-            url: `/app/flows?host=${host}`,
-            selected: location.pathname.startsWith("/app/flows"),
-          },
-          {
-            label: 'Pagebuilder',
-            url: `/app/Pagebuilder?host=${host}`,
-            selected: location.pathname.startsWith("/app/Pagebuilder"),
-            icon: TransferOutIcon,
-          },
-          {
-            label: 'Integrations',
-            url: `/app/integrations?host=${host}`,
-            selected: location.pathname.startsWith("/app/integrations"),
-            icon: TransferOutIcon,
-          },
-          {
-            label: 'Settings',
-            url: `/app/settings?host=${host}`,
-            icon: SettingsIcon,
-          }
-        ]}
-      />
-    </Navigation>
-  );
+  const { apiKey } = useLoaderData<typeof loader>();
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <Frame navigation={navigationMarkup}>
+      <ui-nav-menu>
+        <a href="/app">Dashboard</a>
+        <a href="/app/flows">Flow Editor</a>
+        <a href="/app/pagebuilder">Pagebuilder</a>
+        <a href="/app/integrations">Integrations</a>
+        <a href="/app/settings">Settings</a>
+      </ui-nav-menu>
+      <Frame>
         <Suspense fallback={null}>
           <Outlet />
         </Suspense>

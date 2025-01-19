@@ -1,11 +1,10 @@
-import { Frame, Loading, Page, BlockStack, Box, InlineStack } from "@shopify/polaris";
+import { Frame, Loading, Page, BlockStack, Box } from "@shopify/polaris";
 import { useState } from "react";
 import type { Page as PageType, Section, Block } from "../types.js";
 import { SectionList } from "./SectionList.js";
 import { SettingsPanel } from "./SettingsPanel.js";
 import { PreviewPane } from "./PreviewPane.js";
 import { SectionPicker } from "./SectionPicker.js";
-import { BlockList } from "./BlockList.js";
 import { BlockPicker } from "./BlockPicker.js";
 
 interface PageBuilderProps {
@@ -20,6 +19,9 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
   const [selectedBlockId, setSelectedBlockId] = useState<string>();
   const [isSectionPickerOpen, setIsSectionPickerOpen] = useState(false);
   const [isBlockPickerOpen, setIsBlockPickerOpen] = useState(false);
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => 
+    new Set(initialPage?.section_order || [])
+  );
 
   const selectedSection = selectedSectionId ? page?.sections[selectedSectionId] : undefined;
 
@@ -28,6 +30,22 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
     setPage({
       ...page,
       section_order: newOrder
+    });
+  };
+
+  const handleSectionClick = (sectionId: string) => {
+    setSelectedSectionId(sectionId);
+  };
+
+  const handleCollapseToggle = (sectionId: string) => {
+    setCollapsedSections(prev => {
+      const newCollapsed = new Set(prev);
+      if (newCollapsed.has(sectionId)) {
+        newCollapsed.delete(sectionId);
+      } else {
+        newCollapsed.add(sectionId);
+      }
+      return newCollapsed;
     });
   };
 
@@ -42,6 +60,7 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
       section_order: [...page.section_order, section.id]
     });
     setSelectedSectionId(section.id);
+    setCollapsedSections(prev => new Set([...prev, section.id]));
   };
 
   const handleDeleteSection = (sectionId: string) => {
@@ -115,6 +134,7 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
       <Frame>
         <Page
           title={page?.title || "New Page"}
+          fullWidth
           primaryAction={{
             content: "Save",
             onAction: () => page && onSave?.(page),
@@ -148,42 +168,23 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
               flexDirection: "column"
             }}>
               <Box padding="400">
-                <BlockStack gap="400">
-                  <InlineStack gap="200" align="space-between">
-                    <div style={{ fontWeight: "bold" }}>Sections</div>
-                    <button onClick={() => setIsSectionPickerOpen(true)}>Add section</button>
-                  </InlineStack>
-                  <SectionList
-                    sections={page?.sections || {}}
-                    sectionOrder={page?.section_order || []}
-                    onOrderChange={handleSectionOrderChange}
-                    onSectionSelect={setSelectedSectionId}
-                    selectedSectionId={selectedSectionId}
-                    onAddSection={() => setIsSectionPickerOpen(true)}
-                    onDeleteSection={handleDeleteSection}
-                  />
-                </BlockStack>
+                <SectionList
+                  sections={page?.sections || {}}
+                  sectionOrder={page?.section_order || []}
+                  onOrderChange={handleSectionOrderChange}
+                  onSectionSelect={handleSectionClick}
+                  onCollapseToggle={handleCollapseToggle}
+                  selectedSectionId={selectedSectionId}
+                  selectedBlockId={selectedBlockId}
+                  onAddSection={() => setIsSectionPickerOpen(true)}
+                  onDeleteSection={handleDeleteSection}
+                  onBlockOrderChange={handleBlockOrderChange}
+                  onBlockSelect={setSelectedBlockId}
+                  onAddBlock={() => setIsBlockPickerOpen(true)}
+                  onDeleteBlock={handleDeleteBlock}
+                  collapsedSections={collapsedSections}
+                />
               </Box>
-
-              {selectedSection && (
-                <Box padding="400" borderWidth="025" borderColor="border" borderBlockStartWidth="025">
-                  <BlockStack gap="400">
-                    <InlineStack gap="200" align="space-between">
-                      <div style={{ fontWeight: "bold" }}>Blocks</div>
-                      <button onClick={() => setIsBlockPickerOpen(true)}>Add block</button>
-                    </InlineStack>
-                    <BlockList
-                      blocks={selectedSection.blocks}
-                      blockOrder={selectedSection.block_order}
-                      onOrderChange={handleBlockOrderChange}
-                      onBlockSelect={setSelectedBlockId}
-                      selectedBlockId={selectedBlockId}
-                      onAddBlock={() => setIsBlockPickerOpen(true)}
-                      onDeleteBlock={handleDeleteBlock}
-                    />
-                  </BlockStack>
-                </Box>
-              )}
             </div>
 
             {/* Main Content - Preview */}
@@ -196,8 +197,6 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
             }}>
               <div style={{
                 width: "100%",
-                maxWidth: "1200px",
-                margin: "0 auto",
                 backgroundColor: "var(--p-surface)",
                 borderRadius: "var(--p-border-radius-2)",
                 boxShadow: "var(--p-shadow-base)",
@@ -244,14 +243,12 @@ export function PageBuilder({ initialPage, isLoading, onSave }: PageBuilderProps
           onSelect={handleAddSection}
         />
 
-        {selectedSection && (
-          <BlockPicker
-            open={isBlockPickerOpen}
-            onClose={() => setIsBlockPickerOpen(false)}
-            onSelect={handleAddBlock}
-            sectionType={selectedSection.type}
-          />
-        )}
+        <BlockPicker
+          open={isBlockPickerOpen}
+          onClose={() => setIsBlockPickerOpen(false)}
+          onSelect={handleAddBlock}
+          sectionType={selectedSection?.type}
+        />
       </Frame>
     </div>
   );

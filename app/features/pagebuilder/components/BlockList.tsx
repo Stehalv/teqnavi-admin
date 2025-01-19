@@ -1,28 +1,31 @@
-import { BlockStack, Button, Text, Card, InlineStack } from "@shopify/polaris";
-import { DragHandleIcon, DeleteIcon } from "@shopify/polaris-icons";
-import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { Icon, Text } from "@shopify/polaris";
+import { DragHandleIcon, DeleteIcon, TextAlignLeftIcon, ImageIcon, ButtonIcon, PlusCircleIcon } from "@shopify/polaris-icons";
+import { useSortable, SortableContext } from "@dnd-kit/sortable";
+import { DndContext, closestCenter } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
 import type { Block } from "../types.js";
 
 interface BlockListProps {
   blocks: Record<string, Block>;
   blockOrder: string[];
-  onOrderChange: (newOrder: string[]) => void;
-  onBlockSelect: (blockId: string) => void;
   selectedBlockId?: string;
+  onOrderChange: (newOrder: string[]) => void;
+  onBlockSelect: (id: string) => void;
   onAddBlock: () => void;
-  onDeleteBlock: (blockId: string) => void;
+  onDeleteBlock: (id: string) => void;
 }
 
-interface SortableBlockProps {
-  block: Block;
+function SortableBlock({ 
+  block, 
+  isSelected,
+  onClick,
+  onDelete 
+}: { 
+  block: Block; 
   isSelected: boolean;
   onClick: () => void;
   onDelete: () => void;
-}
-
-function SortableBlock({ block, isSelected, onClick, onDelete }: SortableBlockProps) {
+}) {
   const {
     attributes,
     listeners,
@@ -36,104 +39,167 @@ function SortableBlock({ block, isSelected, onClick, onDelete }: SortableBlockPr
     transition,
   };
 
+  const getBlockIcon = (type: string) => {
+    switch (type) {
+      case "text":
+      case "paragraph":
+        return TextAlignLeftIcon;
+      case "image":
+        return ImageIcon;
+      case "button":
+        return ButtonIcon;
+      default:
+        return TextAlignLeftIcon;
+    }
+  };
+
   return (
-    <div ref={setNodeRef} style={style} {...attributes}>
-      <div onClick={onClick} style={{ cursor: "pointer" }}>
-        <Card
-          padding="300"
-          background={isSelected ? "bg-surface-selected" : undefined}
-        >
-          <BlockStack gap="200">
-            <InlineStack gap="200" align="space-between">
-              <InlineStack gap="200">
-                <div 
-                  style={{ 
-                    color: "var(--p-icon)",
-                    cursor: "grab",
-                    display: "flex",
-                    alignItems: "center"
-                  }}
-                  {...listeners}
-                >
-                  <DragHandleIcon />
-                </div>
-                <Text as="span" variant="bodyMd" fontWeight="bold">
-                  {block.type}
-                </Text>
-              </InlineStack>
-              <div onClick={(e) => e.stopPropagation()}>
-                <Button
-                  icon={DeleteIcon}
-                  onClick={onDelete}
-                  variant="plain"
-                  tone="critical"
-                />
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      <div 
+        className="block-container"
+        style={{ 
+          cursor: "pointer",
+          padding: "8px",
+          backgroundColor: isSelected ? "var(--p-surface-selected)" : undefined,
+          borderRadius: "var(--p-border-radius-1)",
+          position: "relative"
+        }}
+        onClick={onClick}
+      >
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <div style={{ 
+            display: "flex", 
+            alignItems: "center",
+            flex: 1,
+            gap: "8px" 
+          }}>
+            <div className="icon-container">
+              <div className="block-icon">
+                <Icon source={getBlockIcon(block.type)} />
               </div>
-            </InlineStack>
-          </BlockStack>
-        </Card>
+              <div className="drag-handle">
+                <Icon source={DragHandleIcon} />
+              </div>
+            </div>
+            
+            <Text as="span" variant="bodyMd">
+              {block.type}
+            </Text>
+          </div>
+
+          <div 
+            className="delete-button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+          >
+            <Icon source={DeleteIcon} tone="critical" />
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-export function BlockList({
+export function BlockList({ 
   blocks,
   blockOrder,
+  selectedBlockId,
   onOrderChange,
   onBlockSelect,
-  selectedBlockId,
   onAddBlock,
-  onDeleteBlock,
+  onDeleteBlock
 }: BlockListProps) {
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
-
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
+    
     if (active.id !== over.id) {
       const oldIndex = blockOrder.indexOf(active.id);
       const newIndex = blockOrder.indexOf(over.id);
+      
       const newOrder = [...blockOrder];
       newOrder.splice(oldIndex, 1);
       newOrder.splice(newIndex, 0, active.id);
+      
       onOrderChange(newOrder);
     }
   };
 
   return (
-    <BlockStack gap="400">
-      <BlockStack gap="200">
-        <Text as="h2" variant="headingMd">Blocks</Text>
-        <Button onClick={onAddBlock} variant="primary" fullWidth>Add Block</Button>
-      </BlockStack>
-
+    <div>
       <DndContext
-        sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={blockOrder}
-          strategy={verticalListSortingStrategy}
-        >
-          <BlockStack gap="300">
-            {blockOrder.map((blockId) => (
-              <SortableBlock
-                key={blockId}
-                block={blocks[blockId]}
-                isSelected={selectedBlockId === blockId}
-                onClick={() => onBlockSelect(blockId)}
-                onDelete={() => onDeleteBlock(blockId)}
-              />
-            ))}
-          </BlockStack>
+        <SortableContext items={blockOrder}>
+          {blockOrder.map((blockId) => (
+            <SortableBlock
+              key={blockId}
+              block={blocks[blockId]}
+              isSelected={blockId === selectedBlockId}
+              onClick={() => onBlockSelect(blockId)}
+              onDelete={() => onDeleteBlock(blockId)}
+            />
+          ))}
         </SortableContext>
       </DndContext>
-    </BlockStack>
+
+      <button
+        onClick={onAddBlock}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--p-action-primary)",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: "4px",
+          padding: "4px",
+          width: "100%",
+          marginTop: "4px"
+        }}
+      >
+        <div style={{ width: "20px", height: "20px" }}>
+          <Icon source={PlusCircleIcon} />
+        </div>
+        <span style={{ fontSize: "13px" }}>Add block</span>
+      </button>
+
+      <style>
+        {`
+          .icon-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+          }
+          .block-icon {
+            opacity: 1;
+            transition: opacity 0.15s ease;
+          }
+          .drag-handle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+          }
+          .block-container:hover .block-icon {
+            opacity: 0;
+          }
+          .block-container:hover .drag-handle {
+            opacity: 1;
+          }
+          .delete-button {
+            opacity: 0;
+            transition: opacity 0.15s ease;
+          }
+          .block-container:hover .delete-button {
+            opacity: 1;
+          }
+        `}
+      </style>
+    </div>
   );
 } 

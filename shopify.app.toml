@@ -1,9 +1,9 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "94b7433443be5e84e0e06ebbfe875a6d"
-application_url = "https://childhood-modern-prove-spa.trycloudflare.com"
-embedded = true
 name = "Teqnavi-Admin"
+client_id = "94b7433443be5e84e0e06ebbfe875a6d"
+application_url = "https://quiet-emissions-lm-swap.trycloudflare.com"
+embedded = true
 handle = "teqnavi-admin"
 
 [build]
@@ -15,12 +15,8 @@ include_config_on_deploy = true
 api_version = "2025-01"
 
   [[webhooks.subscriptions]]
-  topics = [ "app/scopes_update" ]
-  uri = "/webhooks/app/scopes_update"
-
-  [[webhooks.subscriptions]]
   topics = [ "app/uninstalled" ]
-  uri = "/webhooks/app/uninstalled"
+  uri = "/webhooks"
 
 [access_scopes]
 # Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
@@ -28,13 +24,13 @@ scopes = "read_customers,read_orders,read_products,read_script_tags,write_produc
 
 [auth]
 redirect_urls = [
-  "https://childhood-modern-prove-spa.trycloudflare.com/auth/callback",
-  "https://childhood-modern-prove-spa.trycloudflare.com/auth/shopify/callback",
-  "https://childhood-modern-prove-spa.trycloudflare.com/api/auth/callback"
+  "https://quiet-emissions-lm-swap.trycloudflare.com/auth/callback",
+  "https://quiet-emissions-lm-swap.trycloudflare.com/auth/shopify/callback",
+  "https://quiet-emissions-lm-swap.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://childhood-modern-prove-spa.trycloudflare.com"
+url = "https://quiet-emissions-lm-swap.trycloudflare.com"
 subpath = "pages"
 prefix = "a"
 

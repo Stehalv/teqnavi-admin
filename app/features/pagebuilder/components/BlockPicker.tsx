@@ -1,56 +1,51 @@
-import { Modal, BlockStack, Text, Card } from "@shopify/polaris";
+import { Modal, BlockStack, Text, Icon } from "@shopify/polaris";
+import { TextAlignLeftIcon, ImageIcon, ButtonIcon } from "@shopify/polaris-icons";
+import { nanoid } from "nanoid";
 import type { Block } from "../types.js";
 
 interface BlockPickerProps {
   open: boolean;
   onClose: () => void;
   onSelect: (block: Block) => void;
-  sectionType: string;
+  sectionType?: string;
 }
 
-const BLOCK_TEMPLATES: Record<string, Record<string, Omit<Block, "id">>> = {
-  hero: {
-    button: {
-      type: "button",
-      settings: {
-        text: "Shop Now",
-        link: "/collections/all",
-        style: "primary",
-        size: "large"
-      }
-    },
-    image: {
-      type: "image",
-      settings: {
-        image: "",
-        alt: "",
-        overlay_opacity: 0
-      }
+const BLOCK_TEMPLATES: Record<string, { type: string; icon: any; description: string; settings: Record<string, any> }> = {
+  text: {
+    type: "text",
+    icon: TextAlignLeftIcon,
+    description: "Add a text block",
+    settings: {
+      text: "New text block"
     }
   },
-  "featured-collection": {
-    product: {
-      type: "product",
-      settings: {
-        product_id: "",
-        show_price: true,
-        show_vendor: true,
-        show_rating: true
-      }
+  button: {
+    type: "button",
+    icon: ButtonIcon,
+    description: "Add a button",
+    settings: {
+      text: "Button text",
+      link: "#"
+    }
+  },
+  image: {
+    type: "image",
+    icon: ImageIcon,
+    description: "Add an image",
+    settings: {
+      src: "",
+      alt: ""
     }
   }
 };
 
 export function BlockPicker({ open, onClose, onSelect, sectionType }: BlockPickerProps) {
-  const blockTypes = BLOCK_TEMPLATES[sectionType] || {};
-
-  const handleSelect = (type: string) => {
-    const template = blockTypes[type];
-    const newBlock: Block = {
-      ...template,
-      id: `block-${Date.now()}`,
-    };
-    onSelect(newBlock);
+  const handleSelect = (template: typeof BLOCK_TEMPLATES[keyof typeof BLOCK_TEMPLATES]) => {
+    onSelect({
+      id: nanoid(),
+      type: template.type,
+      settings: template.settings
+    });
     onClose();
   };
 
@@ -58,49 +53,52 @@ export function BlockPicker({ open, onClose, onSelect, sectionType }: BlockPicke
     <Modal
       open={open}
       onClose={onClose}
-      title="Add Block"
-      primaryAction={{
-        content: "Cancel",
-        onAction: onClose,
-      }}
+      title="Add block"
+      primaryAction={null}
     >
       <Modal.Section>
         <BlockStack gap="400">
-          <Text as="p" variant="bodyMd">
-            Choose a block type to add to your section
-          </Text>
-          
-          <BlockStack gap="400">
-            {Object.entries(blockTypes).map(([type, template]) => (
-              <div key={type} onClick={() => handleSelect(type)} style={{ cursor: "pointer" }}>
-                <Card padding="400">
-                  <BlockStack gap="200">
-                    <Text as="h3" variant="headingMd">
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </Text>
-                    <Text as="p" variant="bodyMd" tone="subdued">
-                      {getBlockDescription(type)}
-                    </Text>
-                  </BlockStack>
-                </Card>
+          {Object.entries(BLOCK_TEMPLATES).map(([key, template]) => (
+            <button
+              key={key}
+              onClick={() => handleSelect(template)}
+              style={{
+                background: "none",
+                border: "1px solid var(--p-border-subdued)",
+                borderRadius: "var(--p-border-radius-2)",
+                padding: "12px",
+                cursor: "pointer",
+                width: "100%",
+                textAlign: "left",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px"
+              }}
+            >
+              <div style={{ 
+                width: "32px", 
+                height: "32px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "var(--p-surface-subdued)",
+                borderRadius: "var(--p-border-radius-1)"
+              }}>
+                <Icon source={template.icon} />
               </div>
-            ))}
-          </BlockStack>
+              <div>
+                <Text as="span" variant="bodyMd" fontWeight="bold">
+                  {template.type}
+                </Text>
+                <br />
+                <Text as="span" variant="bodySm" tone="subdued">
+                  {template.description}
+                </Text>
+              </div>
+            </button>
+          ))}
         </BlockStack>
       </Modal.Section>
     </Modal>
   );
-}
-
-function getBlockDescription(type: string): string {
-  switch (type) {
-    case "button":
-      return "Add a customizable button with various styles and sizes";
-    case "image":
-      return "Add an image with optional overlay and alt text";
-    case "product":
-      return "Display product details including price, vendor, and rating";
-    default:
-      return "Add a new block to your section";
-  }
 } 
