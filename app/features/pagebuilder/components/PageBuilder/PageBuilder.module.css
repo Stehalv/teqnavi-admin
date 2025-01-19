@@ -1,0 +1,76 @@
+.root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: var(--p-surface-subdued);
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 300px 1fr 300px;
+  gap: var(--p-space-400);
+  height: calc(100vh - 68px); /* 68px is the height of the toolbar */
+  padding: var(--p-space-400);
+  overflow: hidden;
+}
+
+.sidebar {
+  background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-200);
+  box-shadow: var(--p-shadow-100);
+  overflow-y: auto;
+}
+
+.main {
+  background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-200);
+  box-shadow: var(--p-shadow-100);
+  overflow-y: auto;
+}
+
+.settings {
+  background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-200);
+  box-shadow: var(--p-shadow-100);
+  overflow-y: auto;
+}
+
+/* Drag and Drop Styles */
+.dragging {
+  opacity: 0.5;
+}
+
+.dragOverlay {
+  cursor: grabbing;
+  box-shadow: var(--p-shadow-deep);
+  background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-2);
+  padding: var(--p-space-2);
+}
+
+/* Empty State */
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--p-space-8);
+  text-align: center;
+  color: var(--p-text-subdued);
+}
+
+/* Responsive Adjustments */
+@media screen and (max-width: 999px) {
+  .content {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto 1fr auto;
+    height: auto;
+    min-height: calc(100vh - 68px);
+  }
+
+  .sidebar,
+  .main,
+  .settings {
+    max-height: 500px;
+  }
+} 

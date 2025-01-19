@@ -1,0 +1,145 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p-space-3);
+}
+
+.blockContainer {
+  position: relative;
+  padding: var(--p-space-2);
+  border-radius: var(--p-border-radius-2);
+  border: 1px solid var(--p-border-subdued);
+  margin-bottom: var(--p-space-2);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.blockContainer:hover {
+  border-color: var(--p-border);
+  background-color: var(--p-surface-hovered);
+}
+
+.blockContainer:focus-visible {
+  outline: 2px solid var(--p-focused);
+  outline-offset: 1px;
+}
+
+.blockContent {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--p-space-2);
+}
+
+.blockInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-3);
+}
+
+.iconContainer {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-1);
+  cursor: grab;
+}
+
+.iconContainer:active {
+  cursor: grabbing;
+}
+
+.blockIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--p-icon);
+}
+
+.dragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--p-icon-subdued);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.blockContainer:hover .dragHandle {
+  opacity: 1;
+}
+
+.deleteButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: var(--p-border-radius-1);
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s ease;
+}
+
+.blockContainer:hover .deleteButton {
+  opacity: 1;
+}
+
+.deleteButton:hover {
+  background-color: var(--p-surface-critical-subdued);
+}
+
+.deleteButton:focus-visible {
+  opacity: 1;
+  outline: 2px solid var(--p-focused);
+  outline-offset: 1px;
+}
+
+.addBlockButton {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-2);
+  width: 100%;
+  padding: var(--p-space-3);
+  border: 2px dashed var(--p-border-subdued);
+  border-radius: var(--p-border-radius-2);
+  background: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.addBlockButton:hover {
+  border-color: var(--p-border);
+  background-color: var(--p-surface-hovered);
+}
+
+.addBlockButton:focus-visible {
+  outline: 2px solid var(--p-focused);
+  outline-offset: 1px;
+}
+
+.addBlockIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--p-icon);
+}
+
+.addBlockText {
+  color: var(--p-text);
+  font-size: var(--p-font-size-100);
+  font-weight: var(--p-font-weight-medium);
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  padding: var(--p-space-4);
+} 

@@ -1,0 +1,70 @@
+.container {
+  border: 1px solid var(--p-border-subdued);
+  border-radius: var(--p-border-radius-2);
+  margin-bottom: var(--p-space-4);
+  transition: background-color 0.2s ease;
+}
+
+.container:hover {
+  background-color: var(--p-surface-hovered) !important;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  padding: var(--p-space-3);
+  gap: var(--p-space-2);
+}
+
+.dragHandle {
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  color: var(--p-text-subdued);
+  padding: var(--p-space-1);
+  border-radius: var(--p-border-radius-1);
+}
+
+.dragHandle:hover {
+  background-color: var(--p-surface-hovered);
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+  background-color: var(--p-surface-pressed);
+}
+
+.sectionType {
+  color: var(--p-text);
+  font-weight: var(--p-font-weight-medium);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.section {
+  position: relative;
+  margin-bottom: var(--p-space-2);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.section:focus-visible {
+  outline: 2px solid var(--p-focused);
+  outline-offset: 1px;
+}
+
+.selected {
+  outline: 2px solid var(--p-action-primary);
+  outline-offset: 1px;
+}
+
+.blockList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p-space-2);
+  padding: var(--p-space-2);
+  background-color: var(--p-surface-subdued);
+  border-radius: var(--p-border-radius-2);
+  min-height: 60px;
+} 

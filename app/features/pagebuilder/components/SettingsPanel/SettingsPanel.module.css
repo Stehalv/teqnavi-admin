@@ -1,0 +1,49 @@
+.container {
+  width: 100%;
+  max-width: 400px;
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--p-space-4);
+  background-color: var(--p-surface);
+  border-left: 1px solid var(--p-border-subdued);
+}
+
+.required {
+  color: var(--p-text-critical);
+  margin-left: var(--p-space-1);
+}
+
+.header {
+  padding: var(--p-space-400);
+  border-bottom: 1px solid var(--p-border-subdued);
+  font-weight: var(--p-font-weight-semibold);
+  font-size: var(--p-font-size-300);
+  color: var(--p-text);
+}
+
+.content {
+  padding: var(--p-space-400);
+  overflow-y: auto;
+  max-height: calc(100vh - 200px);
+}
+
+.content :global(.Polaris-ColorPicker) {
+  margin-top: var(--p-space-200);
+}
+
+.content :global(.Polaris-Button) {
+  width: 100%;
+  margin-top: var(--p-space-200);
+}
+
+.content :global(.Polaris-RangeSlider) {
+  margin-top: var(--p-space-200);
+}
+
+.content :global(.Polaris-FormLayout) {
+  gap: var(--p-space-400);
+}
+
+.content :global(.Polaris-FormLayout__Item) {
+  margin-top: 0;
+} 

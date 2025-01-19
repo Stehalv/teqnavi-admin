@@ -1,0 +1,22 @@
+.container {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: var(--p-space-4);
+  background-color: var(--p-surface);
+  border-bottom: 1px solid var(--p-border-subdued);
+  box-shadow: var(--p-shadow-base);
+}
+
+.toolbar {
+  background-color: var(--p-surface);
+  border-bottom: 1px solid var(--p-border-subdued);
+  padding: var(--p-space-400);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--p-shadow-100);
+} 

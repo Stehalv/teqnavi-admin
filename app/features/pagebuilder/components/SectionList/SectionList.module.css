@@ -1,0 +1,23 @@
+.sectionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p-space-200);
+  padding: var(--p-space-400);
+  min-height: 100px;
+}
+
+.sectionList:empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed var(--p-border-subdued);
+  border-radius: var(--p-border-radius-200);
+  padding: var(--p-space-800);
+}
+
+.sectionList:empty::before {
+  content: 'Drag sections here to build your page';
+  color: var(--p-text-subdued);
+  text-align: center;
+  font-size: var(--p-font-size-100);
+} 

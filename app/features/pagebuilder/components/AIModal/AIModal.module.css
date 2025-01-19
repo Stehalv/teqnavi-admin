@@ -1,0 +1,13 @@
+.generating {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-200);
+  padding: var(--p-space-200);
+  background-color: var(--p-surface-subdued);
+  border-radius: var(--p-border-radius-200);
+}
+
+.generating p {
+  margin: 0;
+  color: var(--p-text-subdued);
+} 
