@@ -4,11 +4,11 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, InlineStack, Button, Text, Icon } from '@shopify/polaris';
 import { DragHandleIcon, DeleteIcon } from '@shopify/polaris-icons';
 import { usePageBuilder } from '../../context/PageBuilderContext.js';
-import type { Block as BlockType } from '../../types.js';
+import type { BlockUI } from '../../types/shopify.js';
 import styles from './Block.module.css';
 
 interface BlockProps {
-  block: BlockType;
+  block: BlockUI;
   isSelected: boolean;
   parentId: string;
 }

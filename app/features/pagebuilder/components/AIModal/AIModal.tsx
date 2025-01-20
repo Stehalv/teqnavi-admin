@@ -13,11 +13,11 @@ import styles from './AIModal.module.css';
 interface AIModalProps {
   open: boolean;
   onClose: () => void;
-  onGenerate: (prompt: string) => Promise<void>;
+  onGenerate: (prompt: string) => void;
   title: string;
   description: string;
   placeholder: string;
-  generateButtonText?: string;
+  generateButtonText: string;
 }
 
 export function AIModal({

@@ -1,18 +1,19 @@
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, BlockStack, InlineStack, Button, Text, Icon } from '@shopify/polaris';
 import { DragHandleIcon, ChevronDownIcon, ChevronUpIcon, DeleteIcon } from '@shopify/polaris-icons';
 import { usePageBuilder } from '../../context/PageBuilderContext.js';
 import { Block } from '../Block/Block.js';
-import type { Section as SectionType } from '../../types.js';
+import { BlockTemplateSelector } from '../BlockTemplateSelector/BlockTemplateSelector.js';
+import type { SectionUI } from '../../types/shopify.js';
 import styles from './Section.module.css';
 
 interface SectionProps {
-  section: SectionType;
+  section: SectionUI;
   isSelected: boolean;
   selectedBlockId?: string;
-  isDragging: boolean;
+  isDragging?: boolean;
 }
 
 export const Section = memo(function Section({ 
@@ -24,9 +25,9 @@ export const Section = memo(function Section({
   const { 
     selectSection,
     deleteSection,
-    addBlock,
     reorderBlocks
   } = usePageBuilder();
+  const [showBlockTemplateSelector, setShowBlockTemplateSelector] = useState(false);
 
   const {
     attributes,
@@ -56,10 +57,6 @@ export const Section = memo(function Section({
   const handleDelete = useCallback(() => {
     deleteSection(section.id);
   }, [section.id, deleteSection]);
-
-  const handleAddBlock = useCallback(() => {
-    addBlock(section.id, 'text');
-  }, [section.id, addBlock]);
 
   const handleBlockReorder = useCallback((newOrder: string[]) => {
     reorderBlocks(section.id, newOrder);
@@ -98,20 +95,32 @@ export const Section = memo(function Section({
                 {section.block_order.map((blockId) => (
                   <Block
                     key={blockId}
-                    block={section.blocks[blockId]}
+                    block={{
+                      ...section.blocks[blockId],
+                      id: blockId,
+                      parentId: section.id
+                    }}
                     isSelected={selectedBlockId === blockId}
                     parentId={section.id}
                   />
                 ))}
               </div>
-              <Button
-                onClick={handleAddBlock}
-                variant="plain"
-                tone="success"
-                fullWidth
-              >
-                Add Block
-              </Button>
+              <BlockTemplateSelector
+                active={showBlockTemplateSelector}
+                activator={
+                  <Button
+                    onClick={() => setShowBlockTemplateSelector(true)}
+                    variant="plain"
+                    tone="success"
+                    fullWidth
+                  >
+                    Add Block
+                  </Button>
+                }
+                onClose={() => setShowBlockTemplateSelector(false)}
+                sectionId={section.id}
+                sectionType={section.type}
+              />
             </BlockStack>
           )}
         </BlockStack>

@@ -2,7 +2,7 @@
 
 name = "Teqnavi-Admin"
 client_id = "94b7433443be5e84e0e06ebbfe875a6d"
-application_url = "https://luxury-unlike-marina-combined.trycloudflare.com"
+application_url = "https://surprise-dylan-spatial-garmin.trycloudflare.com"
 embedded = true
 handle = "teqnavi-admin"
 
@@ -24,13 +24,13 @@ scopes = "read_customers,read_orders,read_products,read_script_tags,write_produc
 
 [auth]
 redirect_urls = [
-  "https://luxury-unlike-marina-combined.trycloudflare.com/auth/callback",
-  "https://luxury-unlike-marina-combined.trycloudflare.com/auth/shopify/callback",
-  "https://luxury-unlike-marina-combined.trycloudflare.com/api/auth/callback"
+  "https://surprise-dylan-spatial-garmin.trycloudflare.com/auth/callback",
+  "https://surprise-dylan-spatial-garmin.trycloudflare.com/auth/shopify/callback",
+  "https://surprise-dylan-spatial-garmin.trycloudflare.com/api/auth/callback"
 ]
 
 [app_proxy]
-url = "https://luxury-unlike-marina-combined.trycloudflare.com"
+url = "https://surprise-dylan-spatial-garmin.trycloudflare.com"
 subpath = "pages"
 prefix = "a"
 

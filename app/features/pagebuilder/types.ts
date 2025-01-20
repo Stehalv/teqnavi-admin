@@ -72,7 +72,11 @@ export interface ProductBlock extends BaseBlock {
   };
 }
 
-export type Block = TextBlock | ImageBlock | ButtonBlock | ProductBlock;
+export interface Block {
+  id: string;
+  type: string;
+  settings: Record<string, any>;
+}
 
 // Section Types with Discriminated Unions
 interface BaseSection {
@@ -168,12 +172,15 @@ export interface NewsletterSection extends BaseSection {
   };
 }
 
-export type Section = 
-  | HeroSection 
-  | FeaturedCollectionSection 
-  | RichTextSection 
-  | ImageWithTextSection 
-  | NewsletterSection;
+export interface Section extends BaseSection {
+  id: string;
+  templateId: string;
+  type: string;
+  settings: Record<string, any>;
+  blocks: Record<string, Block>;
+  block_order: string[];
+  blocksArray?: Block[];
+}
 
 export type SectionType = Section['type'];
 export type BlockType = Block['type'];
@@ -185,7 +192,7 @@ export interface Page {
   title: string;
   handle: string;
   template: string;
-  sections: Record<string, Section>;
+  sections: Section[];
   section_order: string[];
   settings: PageSettings;
   isPublished: boolean;
@@ -209,4 +216,21 @@ export interface DropResult {
   type: 'SECTION' | 'BLOCK';
   index: number;
   parentId?: string;
+}
+
+export interface SettingField {
+  type: 'text' | 'textarea' | 'number' | 'checkbox' | 'select' | 'radio' | 'range' | 'color' | 'image_picker' | 'url';
+  id: string;
+  label: string;
+  default?: any;
+  info?: string;
+  placeholder?: string;
+  options?: Array<{
+    value: string;
+    label: string;
+  }>;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: string;
 } 

@@ -1,0 +1,83 @@
+.blockWrapper {
+  position: relative;
+  margin-bottom: 1rem;
+}
+
+.selectedBlock {
+  outline: 2px solid var(--p-action-primary);
+  outline-offset: 2px;
+}
+
+.image {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  aspect-ratio: 16/9;
+  background-color: var(--p-surface-neutral);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.productImage {
+  width: 100%;
+  aspect-ratio: 1;
+  background-color: var(--p-surface-neutral);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.productGrid {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+.productCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.productInfo {
+  padding: 0.5rem;
+}
+
+.heroSection {
+  position: relative;
+  min-height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.heroOverlay {
+  position: absolute;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+.heroContent {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.collectionSection {
+  padding: 2rem;
+}
+
+.blockContainer {
+  padding: 1rem;
+} 

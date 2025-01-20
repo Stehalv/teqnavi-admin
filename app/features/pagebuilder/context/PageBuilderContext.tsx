@@ -2,17 +2,16 @@ import React, { createContext, useContext, useCallback } from 'react';
 import { useImmer } from 'use-immer';
 import { v4 as uuidv4 } from 'uuid';
 import type { 
-  Page, 
-  Section, 
-  Block, 
-  SectionType, 
-  BlockType,
+  PageUI,
+  SectionUI, 
+  BlockUI, 
+  DragItemType,
   DragItem,
   DropResult
-} from '../types.js';
+} from '../types/shopify.js';
 
 interface PageBuilderState {
-  page: Page;
+  page: PageUI;
   selectedSectionId?: string;
   selectedBlockId?: string;
   isDragging: boolean;
@@ -23,15 +22,15 @@ interface PageBuilderState {
 
 interface PageBuilderContextType extends PageBuilderState {
   // Section Operations
-  addSection: (type: SectionType) => void;
+  addSection: (section: SectionUI) => void;
   deleteSection: (sectionId: string) => void;
-  updateSectionSettings: <T extends Section>(sectionId: string, settings: Partial<T['settings']>) => void;
+  updateSectionSettings: (sectionId: string, settings: Partial<SectionUI['settings']>) => void;
   reorderSections: (newOrder: string[]) => void;
   
   // Block Operations
-  addBlock: (sectionId: string, type: BlockType) => void;
+  addBlock: (sectionId: string, type: string) => void;
   deleteBlock: (sectionId: string, blockId: string) => void;
-  updateBlockSettings: <T extends Block>(sectionId: string, blockId: string, settings: Partial<T['settings']>) => void;
+  updateBlockSettings: (sectionId: string, blockId: string, settings: Partial<BlockUI['settings']>) => void;
   reorderBlocks: (sectionId: string, newOrder: string[]) => void;
   
   // Selection Operations
@@ -43,8 +42,8 @@ interface PageBuilderContextType extends PageBuilderState {
   endDrag: (result: DropResult) => void;
   
   // Page Operations
-  updatePageSettings: (settings: Partial<Page['settings']>) => void;
-  updatePageContent: (sections: Record<string, Section>, sectionOrder: string[]) => void;
+  updatePageContent: (sections: Record<string, SectionUI>, order: string[]) => void;
+  updatePageSettings: (settings: Record<string, any>) => void;
   savePage: () => Promise<void>;
   publishPage: () => Promise<void>;
   dismissError: () => void;
@@ -52,9 +51,9 @@ interface PageBuilderContextType extends PageBuilderState {
 
 interface PageBuilderProviderProps {
   children: React.ReactNode;
-  initialPage: Page;
-  onSave: (page: Page) => Promise<void>;
-  onPublish?: (page: Page) => Promise<void>;
+  initialPage: PageUI;
+  onSave: (page: PageUI) => Promise<void>;
+  onPublish?: (page: PageUI) => Promise<void>;
 }
 
 const PageBuilderContext = createContext<PageBuilderContextType | null>(null);
@@ -74,28 +73,19 @@ export function PageBuilderProvider({
   });
 
   // Section Operations
-  const addSection = useCallback((type: SectionType) => {
+  const addSection = useCallback((section: SectionUI) => {
     updateState(draft => {
-      const newSection: Section = {
-        id: uuidv4(),
-        type,
-        blocks: {},
-        block_order: [],
-        settings: getDefaultSectionSettings(type)
-      } as Section;
-
-      draft.page.sections[newSection.id] = newSection;
-      draft.page.section_order.push(newSection.id);
-      draft.selectedSectionId = newSection.id;
+      draft.page.data.sections[section.id] = section;
+      draft.page.data.order.push(section.id);
+      draft.selectedSectionId = section.id;
       draft.selectedBlockId = undefined;
     });
   }, []);
 
   const deleteSection = useCallback((sectionId: string) => {
     updateState(draft => {
-      const { [sectionId]: _, ...remainingSections } = draft.page.sections;
-      draft.page.sections = remainingSections;
-      draft.page.section_order = draft.page.section_order.filter(id => id !== sectionId);
+      delete draft.page.data.sections[sectionId];
+      draft.page.data.order = draft.page.data.order.filter(id => id !== sectionId);
       
       if (draft.selectedSectionId === sectionId) {
         draft.selectedSectionId = undefined;
@@ -104,12 +94,12 @@ export function PageBuilderProvider({
     });
   }, []);
 
-  const updateSectionSettings = useCallback(<T extends Section>(
+  const updateSectionSettings = useCallback((
     sectionId: string, 
-    settings: Partial<T['settings']>
+    settings: Partial<SectionUI['settings']>
   ) => {
     updateState(draft => {
-      const section = draft.page.sections[sectionId];
+      const section = draft.page.data.sections[sectionId];
       if (section) {
         Object.assign(section.settings, settings);
       }
@@ -118,36 +108,32 @@ export function PageBuilderProvider({
 
   const reorderSections = useCallback((newOrder: string[]) => {
     updateState(draft => {
-      draft.page.section_order = newOrder;
+      draft.page.data.order = newOrder;
     });
   }, []);
 
   // Block Operations
-  const addBlock = useCallback((sectionId: string, type: BlockType) => {
+  const addBlock = useCallback((sectionId: string, type: string) => {
     updateState(draft => {
-      const section = draft.page.sections[sectionId];
+      const section = draft.page.data.sections[sectionId];
       if (section) {
-        const newBlock: Block = {
-          id: uuidv4(),
+        const blockId = uuidv4();
+        section.blocks[blockId] = {
           type,
           settings: getDefaultBlockSettings(type)
-        } as Block;
-
-        section.blocks[newBlock.id] = newBlock;
-        section.block_order.push(newBlock.id);
-        draft.selectedBlockId = newBlock.id;
+        };
+        section.block_order.push(blockId);
+        draft.selectedBlockId = blockId;
       }
     });
   }, []);
 
   const deleteBlock = useCallback((sectionId: string, blockId: string) => {
     updateState(draft => {
-      const section = draft.page.sections[sectionId];
+      const section = draft.page.data.sections[sectionId];
       if (section) {
-        const { [blockId]: _, ...remainingBlocks } = section.blocks;
-        section.blocks = remainingBlocks;
+        delete section.blocks[blockId];
         section.block_order = section.block_order.filter(id => id !== blockId);
-
         if (draft.selectedBlockId === blockId) {
           draft.selectedBlockId = undefined;
         }
@@ -155,13 +141,13 @@ export function PageBuilderProvider({
     });
   }, []);
 
-  const updateBlockSettings = useCallback(<T extends Block>(
+  const updateBlockSettings = useCallback((
     sectionId: string, 
     blockId: string, 
-    settings: Partial<T['settings']>
+    settings: Partial<BlockUI['settings']>
   ) => {
     updateState(draft => {
-      const section = draft.page.sections[sectionId];
+      const section = draft.page.data.sections[sectionId];
       if (section) {
         const block = section.blocks[blockId];
         if (block) {
@@ -173,7 +159,7 @@ export function PageBuilderProvider({
 
   const reorderBlocks = useCallback((sectionId: string, newOrder: string[]) => {
     updateState(draft => {
-      const section = draft.page.sections[sectionId];
+      const section = draft.page.data.sections[sectionId];
       if (section) {
         section.block_order = newOrder;
       }
@@ -208,15 +194,15 @@ export function PageBuilderProvider({
       draft.dragItem = undefined;
 
       if (result.type === 'SECTION') {
-        draft.page.section_order = reorderArray(
-          draft.page.section_order,
+        draft.page.data.order = reorderStrings(
+          draft.page.data.order,
           result.id,
           result.index
         );
       } else if (result.type === 'BLOCK' && result.parentId) {
-        const section = draft.page.sections[result.parentId];
+        const section = draft.page.data.sections[result.parentId];
         if (section) {
-          section.block_order = reorderArray(
+          section.block_order = reorderStrings(
             section.block_order,
             result.id,
             result.index
@@ -227,16 +213,16 @@ export function PageBuilderProvider({
   }, []);
 
   // Page Operations
-  const updatePageSettings = useCallback((settings: Partial<Page['settings']>) => {
+  const updatePageContent = useCallback((sections: Record<string, SectionUI>, order: string[]) => {
     updateState(draft => {
-      Object.assign(draft.page.settings, settings);
+      draft.page.data.sections = sections;
+      draft.page.data.order = order;
     });
   }, []);
 
-  const updatePageContent = useCallback((sections: Record<string, Section>, sectionOrder: string[]) => {
+  const updatePageSettings = useCallback((settings: Record<string, any>) => {
     updateState(draft => {
-      draft.page.sections = sections;
-      draft.page.section_order = sectionOrder;
+      Object.assign(draft.page.settings, settings);
     });
   }, []);
 
@@ -304,8 +290,8 @@ export function PageBuilderProvider({
     selectBlock,
     startDrag,
     endDrag,
-    updatePageSettings,
     updatePageContent,
+    updatePageSettings,
     savePage,
     publishPage,
     dismissError
@@ -327,7 +313,7 @@ export function usePageBuilder() {
 }
 
 // Helper Functions
-function getDefaultSectionSettings(type: SectionType): Section['settings'] {
+function getDefaultSectionSettings(type: SectionUI['type']): SectionUI['settings'] {
   switch (type) {
     case 'hero':
       return {
@@ -387,18 +373,18 @@ function getDefaultSectionSettings(type: SectionType): Section['settings'] {
         enable_name_field: true,
         success_message: 'Thanks for subscribing!'
       };
+    default:
+      return {};
   }
 }
 
-function getDefaultBlockSettings(type: BlockType): Block['settings'] {
+function getDefaultBlockSettings(type: BlockUI['type']): BlockUI['settings'] {
   switch (type) {
     case 'text':
       return {
         text: 'Add your text here',
         alignment: 'left',
-        size: 'medium',
-        font_family: 'system',
-        font_weight: 'normal'
+        size: 'medium'
       };
     case 'image':
       return {
@@ -411,7 +397,7 @@ function getDefaultBlockSettings(type: BlockType): Block['settings'] {
     case 'button':
       return {
         text: 'Click me',
-        link: '',
+        link: '#',
         style: 'primary',
         size: 'medium',
         full_width: false,
@@ -427,15 +413,17 @@ function getDefaultBlockSettings(type: BlockType): Block['settings'] {
         enable_quick_add: true,
         image_aspect_ratio: '1/1'
       };
+    default:
+      return {};
   }
 }
 
-function reorderArray<T>(array: T[], itemId: T, newIndex: number): T[] {
-  const oldIndex = array.indexOf(itemId);
-  if (oldIndex === -1) return array;
+function reorderStrings(array: string[], itemId: string, newIndex: number): string[] {
+  const currentIndex = array.indexOf(itemId);
+  if (currentIndex === -1) return array;
 
   const newArray = [...array];
-  newArray.splice(oldIndex, 1);
+  newArray.splice(currentIndex, 1);
   newArray.splice(newIndex, 0, itemId);
   return newArray;
 } 

@@ -1,93 +1,51 @@
 import { prisma } from "~/db.server.js";
-import type { Page, PageVersion, PageSettings, Section } from "../types.js";
-
-// Database types from Prisma
-type DbPage = {
-  id: string;
-  shopId: string;
-  title: string;
-  handle: string;
-  template: string;
-  sections: string;
-  section_order: string;
-  settings: string;
-  isPublished: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type DbPageVersion = {
-  id: string;
-  pageId: string;
-  version: number;
-  sections: string;
-  section_order: string;
-  settings: string;
-  message: string | null;
-  createdAt: Date;
-  createdBy: string | null;
-  isLatest: boolean;
-};
+import type { Page, PageVersion, ShopifyPageJSON } from "../types/shopify.js";
 
 export class PageService {
-  private static convertDbPageToPage(dbPage: DbPage): Page {
+  private static convertDbPageToPage(dbPage: any): Page {
     return {
-      ...dbPage,
-      sections: JSON.parse(dbPage.sections),
-      section_order: JSON.parse(dbPage.section_order),
-      settings: JSON.parse(dbPage.settings)
+      id: dbPage.id,
+      shopId: dbPage.shopId,
+      title: dbPage.title,
+      handle: dbPage.handle,
+      isPublished: dbPage.isPublished,
+      data: JSON.parse(dbPage.data),
+      templates: JSON.parse(dbPage.templates),
+      createdAt: dbPage.createdAt,
+      updatedAt: dbPage.updatedAt,
+      publishedAt: dbPage.publishedAt,
+      deletedAt: dbPage.deletedAt
     };
   }
 
-  private static convertDbVersionToPageVersion(dbVersion: DbPageVersion): PageVersion {
+  private static convertDbVersionToPageVersion(dbVersion: any): PageVersion {
     return {
-      ...dbVersion,
-      sections: JSON.parse(dbVersion.sections),
-      section_order: JSON.parse(dbVersion.section_order),
-      settings: JSON.parse(dbVersion.settings)
+      id: dbVersion.id,
+      pageId: dbVersion.pageId,
+      version: dbVersion.version,
+      data: JSON.parse(dbVersion.data),
+      templates: JSON.parse(dbVersion.templates),
+      message: dbVersion.message,
+      createdAt: dbVersion.createdAt,
+      createdBy: dbVersion.createdBy,
+      isLatest: dbVersion.isLatest
     };
   }
 
-  static async createPage(shopId: string, data: Partial<Page>): Promise<Page> {
-    const defaultSettings: PageSettings = {
-      layout: "contained",
-      spacing: 0,
-      background: {
-        type: "color",
-        value: "#ffffff"
-      },
-      seo: {
-        title: data.title || "Untitled Page",
-        description: "",
-        url_handle: data.handle || ""
-      }
+  static async createPage(shopId: string, pageData: Partial<Page>): Promise<Page> {
+    const defaultJson: ShopifyPageJSON = {
+      sections: {},
+      order: []
     };
-
-    const emptySections: Record<string, Section> = {};
-    const emptySectionOrder: string[] = [];
 
     const dbPage = await prisma.page.create({
       data: {
         shopId,
-        title: data.title || "Untitled Page",
-        handle: data.handle || this.generateHandle(data.title || "Untitled Page"),
-        template: data.template || "page",
-        sections: JSON.stringify(emptySections),
-        section_order: JSON.stringify(emptySectionOrder),
-        settings: JSON.stringify(defaultSettings)
-      }
-    });
-
-    // Create initial version
-    await prisma.pageVersion.create({
-      data: {
-        pageId: dbPage.id,
-        version: 1,
-        sections: JSON.stringify(emptySections),
-        section_order: JSON.stringify(emptySectionOrder),
-        settings: dbPage.settings,
-        message: "Initial version",
-        isLatest: true
+        title: pageData.title || "Untitled Page",
+        handle: pageData.handle || this.generateHandle(pageData.title || "Untitled Page"),
+        data: JSON.stringify(pageData.data || defaultJson),
+        templates: JSON.stringify(pageData.templates || {}),
+        isPublished: pageData.isPublished || false
       }
     });
 
@@ -98,7 +56,8 @@ export class PageService {
     const dbPage = await prisma.page.findFirst({
       where: {
         id,
-        shopId
+        shopId,
+        deletedAt: null
       }
     });
 
@@ -107,20 +66,21 @@ export class PageService {
     return this.convertDbPageToPage(dbPage);
   }
 
-  static async updatePage(shopId: string, id: string, data: Partial<Page>): Promise<Page | null> {
+  static async updatePage(shopId: string, id: string, pageData: Partial<Page>): Promise<Page | null> {
     const dbPage = await prisma.page.update({
       where: {
         id,
         shopId
       },
       data: {
-        ...(data.title && { title: data.title }),
-        ...(data.handle && { handle: data.handle }),
-        ...(data.template && { template: data.template }),
-        ...(data.sections && { sections: JSON.stringify(data.sections) }),
-        ...(data.section_order && { section_order: JSON.stringify(data.section_order) }),
-        ...(data.settings && { settings: JSON.stringify(data.settings) }),
-        ...(typeof data.isPublished === 'boolean' && { isPublished: data.isPublished })
+        ...(pageData.title && { title: pageData.title }),
+        ...(pageData.handle && { handle: pageData.handle }),
+        ...(pageData.data && { data: JSON.stringify(pageData.data) }),
+        ...(pageData.templates && { templates: JSON.stringify(pageData.templates) }),
+        ...(typeof pageData.isPublished === 'boolean' && { 
+          isPublished: pageData.isPublished,
+          publishedAt: pageData.isPublished ? new Date() : null
+        })
       }
     });
 
@@ -128,10 +88,13 @@ export class PageService {
   }
 
   static async deletePage(shopId: string, id: string): Promise<void> {
-    await prisma.page.delete({
+    await prisma.page.update({
       where: {
         id,
         shopId
+      },
+      data: {
+        deletedAt: new Date()
       }
     });
   }
@@ -139,7 +102,8 @@ export class PageService {
   static async listPages(shopId: string): Promise<Page[]> {
     const dbPages = await prisma.page.findMany({
       where: {
-        shopId
+        shopId,
+        deletedAt: null
       },
       orderBy: {
         updatedAt: 'desc'
@@ -149,22 +113,24 @@ export class PageService {
     return dbPages.map(this.convertDbPageToPage);
   }
 
-  static async createVersion(pageId: string, data: Partial<PageVersion>): Promise<PageVersion> {
+  static async createVersion(pageId: string, versionData: Partial<PageVersion>): Promise<PageVersion> {
     // Get latest version number
     const latestVersion = await prisma.pageVersion.findFirst({
       where: { pageId },
       orderBy: { version: 'desc' }
     });
 
+    const newVersion = latestVersion ? latestVersion.version + 1 : 1;
+
     const dbVersion = await prisma.pageVersion.create({
       data: {
         pageId,
-        version: (latestVersion?.version || 0) + 1,
-        sections: data.sections || JSON.stringify({}),
-        section_order: data.section_order || JSON.stringify([]),
-        settings: data.settings || JSON.stringify({}),
-        message: data.message,
-        isLatest: data.isLatest || false
+        version: newVersion,
+        data: versionData.data ? JSON.stringify(versionData.data) : JSON.stringify({}),
+        templates: versionData.templates ? JSON.stringify(versionData.templates) : JSON.stringify({}),
+        message: versionData.message,
+        createdBy: versionData.createdBy,
+        isLatest: versionData.isLatest || false
       }
     });
 

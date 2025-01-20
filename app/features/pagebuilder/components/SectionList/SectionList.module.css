@@ -1,9 +1,77 @@
 .sectionList {
+  width: 300px;
+  padding: 1rem;
+  background-color: var(--p-surface);
+  border-right: 1px solid var(--p-border-subdued);
+}
+
+.sections {
   display: flex;
   flex-direction: column;
-  gap: var(--p-space-200);
-  padding: var(--p-space-400);
-  min-height: 100px;
+  gap: 0.5rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  background-color: var(--p-surface);
+  border: 1px solid var(--p-border-subdued);
+  border-radius: var(--p-border-radius-200);
+}
+
+.sectionHeader {
+  padding: 0.75rem;
+  cursor: pointer;
+}
+
+.sectionHeader:hover {
+  background-color: var(--p-surface-hovered);
+}
+
+.selected .sectionHeader {
+  background-color: var(--p-surface-selected);
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.selected .sectionHeader:hover {
+  background-color: var(--p-surface-selected-hovered);
+}
+
+.sectionDragHandle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--p-text-subdued);
+  cursor: grab;
+}
+
+.sectionContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.sectionBlocks {
+  padding: 0.5rem;
+  background-color: var(--p-surface-subdued);
+  border-bottom-left-radius: var(--p-border-radius-200);
+  border-bottom-right-radius: var(--p-border-radius-200);
+}
+
+.blockList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.block {
+  padding: 0.5rem;
+  background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-100);
+  border: 1px solid var(--p-border-subdued);
 }
 
 .sectionList:empty {

@@ -1,22 +1,21 @@
 .previewPane {
-  min-height: calc(100vh - 200px);
-  padding: var(--p-space-400);
-  background-color: var(--p-surface-subdued);
+  flex: 1;
   overflow-y: auto;
+  background-color: var(--p-surface-subdued);
+  padding: 2rem;
 }
 
 .sectionWrapper {
-  margin-bottom: var(--p-space-400);
-  border-radius: var(--p-border-radius-200);
+  position: relative;
+  margin-bottom: 2rem;
   background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-200);
   box-shadow: var(--p-shadow-100);
-  overflow: hidden;
 }
 
 .selectedSection {
-  outline: 2px solid var(--p-border-highlight);
+  outline: 2px solid var(--p-action-primary);
   outline-offset: 2px;
-  border-radius: var(--p-border-radius-200);
 }
 
 .blockWrapper {

@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import { DndContext, DragEndEvent, DragStartEvent, closestCenter, DragOverlay } from '@dnd-kit/core';
-import { Frame, Loading, Banner, Page } from '@shopify/polaris';
+import { Frame, Loading, Banner, Page as PolarisPage } from '@shopify/polaris';
 import { usePageBuilder } from '../../context/PageBuilderContext.js';
 import { Toolbar } from '../Toolbar/Toolbar.js';
 import { SectionList } from '../SectionList/SectionList.js';
@@ -9,6 +9,7 @@ import { PreviewPane } from '~/features/pagebuilder/components/PreviewPane/Previ
 import { Section } from '../Section/Section.js';
 import { Block } from '../Block/Block.js';
 import styles from './PageBuilder.module.css';
+import type { PageUI, DragItemType, SectionUI, BlockUI } from '../../types/shopify.js';
 
 export function PageBuilder() {
   const { 
@@ -21,15 +22,17 @@ export function PageBuilder() {
     error,
     startDrag,
     endDrag,
-    dismissError
+    dismissError,
+    selectSection,
+    deleteSection
   } = usePageBuilder();
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     startDrag({
       id: active.id as string,
-      type: active.data.current?.type || 'SECTION',
-      index: active.data.current?.sortable.index,
+      type: (active.data.current?.type || 'SECTION') as DragItemType,
+      index: active.data.current?.sortable?.index,
       parentId: active.data.current?.parentId
     });
   }, [startDrag]);
@@ -40,8 +43,8 @@ export function PageBuilder() {
     if (over && active.id !== over.id) {
       endDrag({
         id: active.id as string,
-        type: active.data.current?.type || 'SECTION',
-        index: over.data.current?.sortable.index,
+        type: (active.data.current?.type || 'SECTION') as DragItemType,
+        index: over.data.current?.sortable?.index || 0,
         parentId: active.data.current?.parentId
       });
     }
@@ -51,7 +54,7 @@ export function PageBuilder() {
     if (!dragItem) return null;
 
     if (dragItem.type === 'SECTION' && dragItem.id) {
-      const section = page.sections[dragItem.id];
+      const section = page.data.sections[dragItem.id];
       if (section) {
         return (
           <div className={styles.dragOverlay}>
@@ -66,9 +69,11 @@ export function PageBuilder() {
     }
 
     if (dragItem.type === 'BLOCK' && dragItem.parentId && dragItem.id) {
-      const section = page.sections[dragItem.parentId];
-      const block = section?.blocks[dragItem.id];
+      const section = page.data.sections[dragItem.parentId];
+      const block = section?.blocks?.[dragItem.id] as BlockUI & { id: string; parentId: string };
       if (block) {
+        block.id = dragItem.id;
+        block.parentId = dragItem.parentId;
         return (
           <div className={styles.dragOverlay}>
             <Block
@@ -82,10 +87,18 @@ export function PageBuilder() {
     }
 
     return null;
-  }, [dragItem, page.sections]);
+  }, [dragItem, page]);
+
+  if (!page) {
+    return (
+      <PolarisPage fullWidth>
+        <Loading />
+      </PolarisPage>
+    );
+  }
 
   return (
-    <Page fullWidth>
+    <PolarisPage fullWidth>
       {isLoading && <Loading />}
       
       {error && (
@@ -108,7 +121,12 @@ export function PageBuilder() {
         >
           <div className={styles.content}>
             <div className={styles.sidebar}>
-              <SectionList />
+              <SectionList
+                page={page}
+                selectedSectionId={selectedSectionId}
+                onSelectSection={selectSection}
+                onDeleteSection={deleteSection}
+              />
             </div>
             
             <div className={styles.main}>
@@ -129,6 +147,6 @@ export function PageBuilder() {
           </DragOverlay>
         </DndContext>
       </div>
-    </Page>
+    </PolarisPage>
   );
 } 

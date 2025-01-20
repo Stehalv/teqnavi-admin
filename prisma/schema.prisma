@@ -1,5 +1,7 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+  engineType = "binary"
 }
 
 datasource db {
@@ -25,20 +27,18 @@ model Session {
   emailVerified Boolean?  @default(false)
 }
 
-
-
 model Page {
   id            String    @id @default(cuid())
   shopId        String
   title         String
   handle        String
-  template      String    @default("page")
-  sections      String    @db.Text @default("{}")  // Stores section data as JSON string
-  section_order String    @db.Text @default("[]")  // Stores array of section IDs as JSON string
-  settings      String    @db.Text @default("{}")  // Stores page settings as JSON string
   isPublished   Boolean   @default(false)
+  data          String    @db.Text @default("{}")  // Stores Shopify-compatible JSON
+  templates     String    @db.Text @default("{}")  // Stores section templates
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  publishedAt   DateTime?
+  deletedAt     DateTime?
   versions      PageVersion[]
 
   @@unique([shopId, handle])
@@ -50,9 +50,8 @@ model PageVersion {
   id            String    @id @default(cuid())
   pageId        String
   version       Int
-  sections      String    @db.Text @default("{}")
-  section_order String    @db.Text @default("[]")
-  settings      String    @db.Text @default("{}")
+  data          String    @db.Text @default("{}")  // Stores Shopify-compatible JSON
+  templates     String    @db.Text @default("{}")  // Stores section templates
   message       String?
   createdAt     DateTime  @default(now())
   createdBy     String?
@@ -60,6 +59,37 @@ model PageVersion {
   page          Page      @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@unique([pageId, version])
-  @@index([pageId])
   @@map("page_versions")
+}
+
+model SectionTemplate {
+  id          String         @id @default(cuid())
+  shopId      String
+  name        String
+  type        String        
+  schema      String        @db.Text  // JSON schema for section settings
+  liquid      String        @db.Text  // Liquid template code
+  blocks      BlockTemplate[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@unique([shopId, type])
+  @@unique([id, shopId])
+  @@index([shopId])
+  @@map("section_templates")
+}
+
+model BlockTemplate {
+  id                 String          @id @default(cuid())
+  sectionTemplateId  String
+  name               String
+  type               String
+  schema             String         @db.Text  // JSON schema for block settings
+  liquid             String         @db.Text  // Liquid template code
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  sectionTemplate    SectionTemplate @relation(fields: [sectionTemplateId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionTemplateId, type])
+  @@map("block_templates")
 }

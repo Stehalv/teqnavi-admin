@@ -7,6 +7,11 @@ import { generateBlock } from '../../services/ai.js';
 import type { BlockType, Block as BlockInterface } from '../../types.js';
 import styles from './BlockList.module.css';
 
+const COMMON_BLOCK_TYPES: BlockType[] = ['text', 'image', 'button'];
+const SECTION_SPECIFIC_BLOCKS: Record<string, BlockType[]> = {
+  'featured-collection': ['product']
+};
+
 interface BlockListProps {
   sectionId: string;
   sectionType: string;
@@ -53,6 +58,11 @@ export const BlockList = memo(function BlockList({
     }
   }, [selectedBlockType, sectionId, sectionType, addBlock]);
 
+  const availableBlockTypes = [
+    ...COMMON_BLOCK_TYPES,
+    ...(SECTION_SPECIFIC_BLOCKS[sectionType] || [])
+  ];
+
   return (
     <>
       <Card>
@@ -60,20 +70,14 @@ export const BlockList = memo(function BlockList({
           <InlineStack align="space-between">
             <Text variant="headingMd" as="h3">Blocks</Text>
             <ButtonGroup>
-              <Button onClick={() => handleAddBlock('text')}>
-                Add Text
-              </Button>
-              <Button onClick={() => handleAddBlock('image')}>
-                Add Image
-              </Button>
-              <Button onClick={() => handleAddBlock('button')}>
-                Add Button
-              </Button>
-              {sectionType === 'featured-collection' && (
-                <Button onClick={() => handleAddBlock('product')}>
-                  Add Product
+              {availableBlockTypes.map(blockType => (
+                <Button 
+                  key={blockType} 
+                  onClick={() => handleAddBlock(blockType)}
+                >
+                  Add {blockType.charAt(0).toUpperCase() + blockType.slice(1)}
                 </Button>
-              )}
+              ))}
             </ButtonGroup>
           </InlineStack>
 
@@ -97,7 +101,7 @@ export const BlockList = memo(function BlockList({
           {blockOrder.map((blockId) => (
             <Block
               key={blockId}
-              block={blocks[blockId]}
+              block={{ ...blocks[blockId], parentId: sectionId }}
               isSelected={blockId === selectedBlockId}
               parentId={sectionId}
             />
