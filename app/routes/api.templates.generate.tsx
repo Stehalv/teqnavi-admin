@@ -1,7 +1,8 @@
 import { json } from "@remix-run/node";
 import type { ActionFunction } from "@remix-run/node";
-import { AIService } from "~/features/pagebuilder/services/ai.server.js";
+import { PageBuilderAI } from "~/features/pagebuilder/services/pagebuilder-ai.server.js";
 import { validateShopAccess } from "~/middleware/auth.server.js";
+import type { Section } from "~/features/pagebuilder/types/shopify.js";
 
 export const action: ActionFunction = async ({ request }) => {
   const { shopId } = await validateShopAccess(request);
@@ -12,20 +13,17 @@ export const action: ActionFunction = async ({ request }) => {
 
   const formData = await request.formData();
   const prompt = formData.get('prompt');
+  const type = formData.get('type');
 
-  if (!prompt || typeof prompt !== 'string') {
-    return json({ error: "Prompt is required" }, { status: 400 });
+  if (!type || typeof type !== 'string') {
+    return json({ error: "Section type is required" }, { status: 400 });
   }
 
   try {
-    const result = await AIService.generatePage(shopId, prompt);
-
-    return json({ 
-      success: true, 
-      data: result
-    });
+    const result = await PageBuilderAI.generateSection(shopId, type);
+    return json({ success: true, data: result });
   } catch (error) {
-    console.error('Error generating templates:', error);
+    console.error('Error generating section:', error);
     return json({ 
       success: false, 
       error: error instanceof Error ? error.message : 'Unknown error occurred' 

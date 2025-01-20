@@ -1,24 +1,5 @@
 import type { SettingField } from './settings.js';
 
-export interface BaseTemplate {
-  id: string;
-  shopId: string;
-  name: string;
-  type: string;
-  schema: object;
-  liquid: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-export interface SectionTemplate extends BaseTemplate {
-  blocks: BlockTemplate[];
-}
-
-export interface BlockTemplate extends BaseTemplate {
-  sectionTemplateId: string;
-}
-
 export interface TemplateSchema {
   settings: SettingField[];
   blocks?: {
@@ -35,4 +16,23 @@ export interface TemplateSchema {
       settings: Record<string, any>;
     }>;
   }[];
+}
+
+export interface SectionDefinition {
+  type: string;
+  name: string;
+  schema: TemplateSchema;
+  liquid: string;
+  blocks?: {
+    [type: string]: {
+      name: string;
+      schema: TemplateSchema;
+      liquid: string;
+    }
+  };
+}
+
+// Registry of available section types
+export interface SectionRegistry {
+  [type: string]: SectionDefinition;
 } 

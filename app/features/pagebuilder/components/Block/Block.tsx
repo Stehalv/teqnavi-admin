@@ -4,19 +4,21 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, InlineStack, Button, Text, Icon } from '@shopify/polaris';
 import { DragHandleIcon, DeleteIcon } from '@shopify/polaris-icons';
 import { usePageBuilder } from '../../context/PageBuilderContext.js';
-import type { BlockUI } from '../../types/shopify.js';
+import type { Block as BlockType } from '../../types/shopify.js';
 import styles from './Block.module.css';
 
 interface BlockProps {
-  block: BlockUI;
+  block: BlockType;
+  blockKey: string;
+  parentKey: string;
   isSelected: boolean;
-  parentId: string;
 }
 
 export const Block = memo(function Block({ 
   block,
-  isSelected,
-  parentId
+  blockKey,
+  parentKey,
+  isSelected
 }: BlockProps) {
   const { 
     selectBlock,
@@ -31,10 +33,10 @@ export const Block = memo(function Block({
     transition,
     isDragging
   } = useSortable({
-    id: block.id,
+    id: blockKey,
     data: {
       type: 'BLOCK',
-      parentId
+      parentKey
     }
   });
 
@@ -46,12 +48,12 @@ export const Block = memo(function Block({
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    selectBlock(block.id);
-  }, [block.id, selectBlock]);
+    selectBlock(blockKey);
+  }, [blockKey, selectBlock]);
 
   const handleDelete = useCallback(() => {
-    deleteBlock(parentId, block.id);
-  }, [parentId, block.id, deleteBlock]);
+    deleteBlock(parentKey, blockKey);
+  }, [parentKey, blockKey, deleteBlock]);
 
   const getBlockLabel = () => {
     switch (block.type) {

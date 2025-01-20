@@ -3,17 +3,18 @@ import { useImmer } from 'use-immer';
 import { v4 as uuidv4 } from 'uuid';
 import type { 
   PageUI,
-  SectionUI, 
-  BlockUI, 
+  Section,
+  Block,
   DragItemType,
   DragItem,
   DropResult
 } from '../types/shopify.js';
+import type { SectionRegistry } from '../types/templates.js';
 
 interface PageBuilderState {
   page: PageUI;
-  selectedSectionId?: string;
-  selectedBlockId?: string;
+  selectedSectionKey?: string;
+  selectedBlockKey?: string;
   isDragging: boolean;
   dragItem?: DragItem;
   isLoading: boolean;
@@ -22,27 +23,27 @@ interface PageBuilderState {
 
 interface PageBuilderContextType extends PageBuilderState {
   // Section Operations
-  addSection: (section: SectionUI) => void;
-  deleteSection: (sectionId: string) => void;
-  updateSectionSettings: (sectionId: string, settings: Partial<SectionUI['settings']>) => void;
+  addSection: (type: string, settings?: Record<string, any>) => void;
+  deleteSection: (sectionKey: string) => void;
+  updateSectionSettings: (sectionKey: string, settings: Partial<Section['settings']>) => void;
   reorderSections: (newOrder: string[]) => void;
   
   // Block Operations
-  addBlock: (sectionId: string, type: string) => void;
-  deleteBlock: (sectionId: string, blockId: string) => void;
-  updateBlockSettings: (sectionId: string, blockId: string, settings: Partial<BlockUI['settings']>) => void;
-  reorderBlocks: (sectionId: string, newOrder: string[]) => void;
+  addBlock: (sectionKey: string, type: string) => void;
+  deleteBlock: (sectionKey: string, blockKey: string) => void;
+  updateBlockSettings: (sectionKey: string, blockKey: string, settings: Partial<Block['settings']>) => void;
+  reorderBlocks: (sectionKey: string, newOrder: string[]) => void;
   
   // Selection Operations
-  selectSection: (sectionId?: string) => void;
-  selectBlock: (blockId?: string) => void;
+  selectSection: (sectionKey?: string) => void;
+  selectBlock: (blockKey?: string) => void;
   
   // Drag and Drop Operations
   startDrag: (item: DragItem) => void;
   endDrag: (result: DropResult) => void;
   
   // Page Operations
-  updatePageContent: (sections: Record<string, SectionUI>, order: string[]) => void;
+  updatePageContent: (sections: Record<string, Section>, order: string[]) => void;
   updatePageSettings: (settings: Record<string, any>) => void;
   savePage: () => Promise<void>;
   publishPage: () => Promise<void>;
@@ -52,6 +53,7 @@ interface PageBuilderContextType extends PageBuilderState {
 interface PageBuilderProviderProps {
   children: React.ReactNode;
   initialPage: PageUI;
+  sectionRegistry: SectionRegistry;
   onSave: (page: PageUI) => Promise<void>;
   onPublish?: (page: PageUI) => Promise<void>;
 }
@@ -61,45 +63,56 @@ const PageBuilderContext = createContext<PageBuilderContextType | null>(null);
 export function PageBuilderProvider({ 
   children, 
   initialPage,
+  sectionRegistry,
   onSave,
   onPublish
 }: PageBuilderProviderProps) {
   const [state, updateState] = useImmer<PageBuilderState>({
     page: initialPage,
-    selectedSectionId: undefined,
-    selectedBlockId: undefined,
+    selectedSectionKey: undefined,
+    selectedBlockKey: undefined,
     isDragging: false,
     isLoading: false
   });
 
   // Section Operations
-  const addSection = useCallback((section: SectionUI) => {
+  const addSection = useCallback((type: string, settings?: Record<string, any>) => {
     updateState(draft => {
-      draft.page.data.sections[section.id] = section;
-      draft.page.data.order.push(section.id);
-      draft.selectedSectionId = section.id;
-      draft.selectedBlockId = undefined;
-    });
-  }, []);
-
-  const deleteSection = useCallback((sectionId: string) => {
-    updateState(draft => {
-      delete draft.page.data.sections[sectionId];
-      draft.page.data.order = draft.page.data.order.filter(id => id !== sectionId);
+      const sectionKey = `section-${uuidv4()}`;
+      const sectionDefinition = sectionRegistry[type];
       
-      if (draft.selectedSectionId === sectionId) {
-        draft.selectedSectionId = undefined;
-        draft.selectedBlockId = undefined;
+      if (sectionDefinition) {
+        draft.page.data.sections[sectionKey] = {
+          type,
+          settings: settings || {},
+          blocks: {},
+          block_order: []
+        };
+        draft.page.data.order.push(sectionKey);
+        draft.selectedSectionKey = sectionKey;
+        draft.selectedBlockKey = undefined;
+      }
+    });
+  }, [sectionRegistry]);
+
+  const deleteSection = useCallback((sectionKey: string) => {
+    updateState(draft => {
+      delete draft.page.data.sections[sectionKey];
+      draft.page.data.order = draft.page.data.order.filter(key => key !== sectionKey);
+      
+      if (draft.selectedSectionKey === sectionKey) {
+        draft.selectedSectionKey = undefined;
+        draft.selectedBlockKey = undefined;
       }
     });
   }, []);
 
   const updateSectionSettings = useCallback((
-    sectionId: string, 
-    settings: Partial<SectionUI['settings']>
+    sectionKey: string, 
+    settings: Partial<Section['settings']>
   ) => {
     updateState(draft => {
-      const section = draft.page.data.sections[sectionId];
+      const section = draft.page.data.sections[sectionKey];
       if (section) {
         Object.assign(section.settings, settings);
       }
@@ -113,43 +126,48 @@ export function PageBuilderProvider({
   }, []);
 
   // Block Operations
-  const addBlock = useCallback((sectionId: string, type: string) => {
+  const addBlock = useCallback((sectionKey: string, type: string) => {
     updateState(draft => {
-      const section = draft.page.data.sections[sectionId];
+      const section = draft.page.data.sections[sectionKey];
       if (section) {
-        const blockId = uuidv4();
-        section.blocks[blockId] = {
-          type,
-          settings: getDefaultBlockSettings(type)
-        };
-        section.block_order.push(blockId);
-        draft.selectedBlockId = blockId;
+        const blockKey = `block-${uuidv4()}`;
+        const sectionDefinition = sectionRegistry[section.type];
+        const blockDefinition = sectionDefinition?.blocks?.[type];
+
+        if (blockDefinition) {
+          section.blocks[blockKey] = {
+            type,
+            settings: {}
+          };
+          section.block_order.push(blockKey);
+          draft.selectedBlockKey = blockKey;
+        }
       }
     });
-  }, []);
+  }, [sectionRegistry]);
 
-  const deleteBlock = useCallback((sectionId: string, blockId: string) => {
+  const deleteBlock = useCallback((sectionKey: string, blockKey: string) => {
     updateState(draft => {
-      const section = draft.page.data.sections[sectionId];
+      const section = draft.page.data.sections[sectionKey];
       if (section) {
-        delete section.blocks[blockId];
-        section.block_order = section.block_order.filter(id => id !== blockId);
-        if (draft.selectedBlockId === blockId) {
-          draft.selectedBlockId = undefined;
+        delete section.blocks[blockKey];
+        section.block_order = section.block_order.filter(key => key !== blockKey);
+        if (draft.selectedBlockKey === blockKey) {
+          draft.selectedBlockKey = undefined;
         }
       }
     });
   }, []);
 
   const updateBlockSettings = useCallback((
-    sectionId: string, 
-    blockId: string, 
-    settings: Partial<BlockUI['settings']>
+    sectionKey: string, 
+    blockKey: string, 
+    settings: Partial<Block['settings']>
   ) => {
     updateState(draft => {
-      const section = draft.page.data.sections[sectionId];
+      const section = draft.page.data.sections[sectionKey];
       if (section) {
-        const block = section.blocks[blockId];
+        const block = section.blocks[blockKey];
         if (block) {
           Object.assign(block.settings, settings);
         }
@@ -157,9 +175,9 @@ export function PageBuilderProvider({
     });
   }, []);
 
-  const reorderBlocks = useCallback((sectionId: string, newOrder: string[]) => {
+  const reorderBlocks = useCallback((sectionKey: string, newOrder: string[]) => {
     updateState(draft => {
-      const section = draft.page.data.sections[sectionId];
+      const section = draft.page.data.sections[sectionKey];
       if (section) {
         section.block_order = newOrder;
       }
@@ -167,16 +185,16 @@ export function PageBuilderProvider({
   }, []);
 
   // Selection Operations
-  const selectSection = useCallback((sectionId?: string) => {
+  const selectSection = useCallback((sectionKey?: string) => {
     updateState(draft => {
-      draft.selectedSectionId = sectionId;
-      draft.selectedBlockId = undefined;
+      draft.selectedSectionKey = sectionKey;
+      draft.selectedBlockKey = undefined;
     });
   }, []);
 
-  const selectBlock = useCallback((blockId?: string) => {
+  const selectBlock = useCallback((blockKey?: string) => {
     updateState(draft => {
-      draft.selectedBlockId = blockId;
+      draft.selectedBlockKey = blockKey;
     });
   }, []);
 
@@ -196,15 +214,15 @@ export function PageBuilderProvider({
       if (result.type === 'SECTION') {
         draft.page.data.order = reorderStrings(
           draft.page.data.order,
-          result.id,
+          result.key,
           result.index
         );
-      } else if (result.type === 'BLOCK' && result.parentId) {
-        const section = draft.page.data.sections[result.parentId];
+      } else if (result.type === 'BLOCK' && result.parentKey) {
+        const section = draft.page.data.sections[result.parentKey];
         if (section) {
           section.block_order = reorderStrings(
             section.block_order,
-            result.id,
+            result.key,
             result.index
           );
         }
@@ -213,7 +231,7 @@ export function PageBuilderProvider({
   }, []);
 
   // Page Operations
-  const updatePageContent = useCallback((sections: Record<string, SectionUI>, order: string[]) => {
+  const updatePageContent = useCallback((sections: Record<string, Section>, order: string[]) => {
     updateState(draft => {
       draft.page.data.sections = sections;
       draft.page.data.order = order;
@@ -313,117 +331,12 @@ export function usePageBuilder() {
 }
 
 // Helper Functions
-function getDefaultSectionSettings(type: SectionUI['type']): SectionUI['settings'] {
-  switch (type) {
-    case 'hero':
-      return {
-        heading: 'Welcome to our store',
-        subheading: 'Shop the latest trends',
-        background_type: 'color',
-        background_value: '#000000',
-        text_color: '#ffffff',
-        text_alignment: 'center',
-        content_width: 'medium',
-        min_height: 400,
-        overlay_opacity: 0
-      };
-    case 'featured-collection':
-      return {
-        title: 'Featured Collection',
-        collection_id: '',
-        products_to_show: 4,
-        columns_desktop: 4,
-        columns_mobile: 2,
-        show_view_all: true,
-        view_all_style: 'button',
-        enable_quick_add: true,
-        show_secondary_image: true,
-        show_vendor: true,
-        show_rating: true,
-        enable_filtering: false,
-        enable_sorting: false
-      };
-    case 'rich-text':
-      return {
-        content: 'Add your content here',
-        text_alignment: 'left',
-        narrow_content: true,
-        enable_custom_text_color: false,
-        background_type: 'none'
-      };
-    case 'image-with-text':
-      return {
-        image: '',
-        image_width: 'medium',
-        image_aspect_ratio: '16/9',
-        heading: 'Image with text',
-        text: 'Pair text with an image',
-        layout: 'image_first',
-        desktop_content_position: 'middle',
-        desktop_content_alignment: 'left',
-        enable_custom_text_color: false
-      };
-    case 'newsletter':
-      return {
-        heading: 'Subscribe to our newsletter',
-        background_type: 'none',
-        content_alignment: 'center',
-        narrow_content: true,
-        show_social_sharing: true,
-        enable_name_field: true,
-        success_message: 'Thanks for subscribing!'
-      };
-    default:
-      return {};
-  }
-}
-
-function getDefaultBlockSettings(type: BlockUI['type']): BlockUI['settings'] {
-  switch (type) {
-    case 'text':
-      return {
-        text: 'Add your text here',
-        alignment: 'left',
-        size: 'medium'
-      };
-    case 'image':
-      return {
-        image: '',
-        alt: '',
-        overlay_opacity: 0,
-        aspect_ratio: '16/9',
-        lazy_load: true
-      };
-    case 'button':
-      return {
-        text: 'Click me',
-        link: '#',
-        style: 'primary',
-        size: 'medium',
-        full_width: false,
-        open_in_new_tab: false
-      };
-    case 'product':
-      return {
-        product_id: '',
-        show_price: true,
-        show_vendor: true,
-        show_rating: true,
-        show_badges: true,
-        enable_quick_add: true,
-        image_aspect_ratio: '1/1'
-      };
-    default:
-      return {};
-  }
-}
-
-function reorderStrings(array: string[], itemId: string, newIndex: number): string[] {
-  const currentIndex = array.indexOf(itemId);
+function reorderStrings(array: string[], itemKey: string, newIndex: number): string[] {
+  const currentIndex = array.indexOf(itemKey);
   if (currentIndex === -1) return array;
 
   const newArray = [...array];
   newArray.splice(currentIndex, 1);
-  newArray.splice(newIndex, 0, itemId);
+  newArray.splice(newIndex, 0, itemKey);
   return newArray;
 } 

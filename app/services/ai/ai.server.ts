@@ -1,39 +1,51 @@
 import { OpenAI } from 'openai';
 
+interface AIResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+
 export class AIService {
   private static openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
   });
 
-  static async generateFromPrompt<T>(
+  private static readonly MODEL = "gpt-3.5-turbo";
+  private static readonly MAX_TOKENS = 4000;
+  private static readonly TEMPERATURE = 0.7;
+
+  static async generate<T>(
     prompt: string,
     systemPrompt: string,
-    responseExample: string,
-    temperature: number = 0.7,
-    maxTokens: number = 4000
-  ): Promise<T> {
-    const completion = await this.openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [
-        {
-          role: "system",
-          content: `${systemPrompt}\n\nThe response should be valid JSON matching this structure:\n${responseExample}`
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature,
-      max_tokens: maxTokens,
-      response_format: { type: "json_object" }
-    });
+  ): Promise<AIResponse<T>> {
+    try {
+      const completion = await this.openai.chat.completions.create({
+        model: this.MODEL,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: prompt }
+        ],
+        temperature: this.TEMPERATURE,
+        max_tokens: this.MAX_TOKENS,
+        response_format: { type: "json_object" }
+      });
 
-    const response = completion.choices[0]?.message?.content;
-    if (!response) {
-      throw new Error('No response from AI');
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error('No response from AI');
+      }
+
+      return {
+        success: true,
+        data: JSON.parse(content) as T
+      };
+    } catch (error) {
+      console.error('AI generation error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error occurred'
+      };
     }
-
-    return JSON.parse(response) as T;
   }
 } 

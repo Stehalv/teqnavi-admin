@@ -1,5 +1,5 @@
 import { Liquid } from 'liquidjs';
-import type { Page, Section, Block } from '../types.js';
+import type { Page, Section, Block } from '../types/shopify.js';
 import { TemplateService } from './template.server.js';
 
 export class RendererService {
@@ -7,58 +7,84 @@ export class RendererService {
     cache: process.env.NODE_ENV === 'production'
   });
 
-  static async renderSection(shopId: string, section: Section): Promise<string> {
-    const template = await TemplateService.getSectionTemplate(shopId, section.type);
+  static async renderSection(shopId: string, section: Section, sectionKey: string): Promise<string> {
+    const template = await TemplateService.getSectionDefinition(shopId, section.type);
     if (!template) {
       throw new Error(`Template not found for section type: ${section.type}`);
     }
 
     const renderedBlocks = await Promise.all(
-      section.blocks.map(async (block) => {
-        const blockTemplate = template.blocks.find(t => t.type === block.type);
-        if (!blockTemplate) {
-          throw new Error(`Block template not found for type: ${block.type}`);
+      section.block_order.map(async (blockKey) => {
+        const block = section.blocks[blockKey];
+        if (!block) return '';
+
+        const blockDefinition = template.schema.blocks?.find(b => b.type === block.type);
+        if (!blockDefinition) {
+          throw new Error(`Block definition not found for type: ${block.type}`);
         }
-        return this.renderBlock(blockTemplate.liquid, block);
+
+        return this.renderBlock(block, blockKey, sectionKey);
       })
     );
 
     const context = {
       section: {
-        id: section.id,
+        id: sectionKey,
+        type: section.type,
         settings: section.settings,
         blocks: renderedBlocks
       }
     };
 
-    return this.engine.parseAndRender(template.liquid, context);
+    // Return a placeholder preview since actual rendering is handled by Shopify
+    return `
+      <div class="section" data-section-id="${sectionKey}" data-section-type="${section.type}">
+        <div class="section-content">
+          ${renderedBlocks.join('\n')}
+        </div>
+      </div>
+    `;
   }
 
-  static async renderBlock(template: string, block: Block): Promise<string> {
+  static async renderBlock(block: Block, blockKey: string, sectionKey: string): Promise<string> {
     const context = {
       block: {
-        id: block.id,
+        id: blockKey,
         type: block.type,
-        settings: block.settings
+        settings: block.settings,
+        section: sectionKey
       }
     };
 
-    return this.engine.parseAndRender(template, context);
+    // Return a placeholder preview since actual rendering is handled by Shopify
+    return `
+      <div class="block" data-block-id="${blockKey}" data-block-type="${block.type}">
+        <div class="block-content">
+          <pre>${JSON.stringify(block.settings, null, 2)}</pre>
+        </div>
+      </div>
+    `;
   }
 
   static async renderPage(shopId: string, page: Page): Promise<string> {
     const renderedSections = await Promise.all(
-      page.sections.map(async (section) => {
-        return this.renderSection(shopId, section);
+      page.data.order.map(async (sectionKey) => {
+        const section = page.data.sections[sectionKey];
+        if (!section) return '';
+        return this.renderSection(shopId, section, sectionKey);
       })
     );
 
-    return renderedSections.join('\n');
+    return `
+      <div class="page-content">
+        ${renderedSections.join('\n')}
+      </div>
+    `;
   }
 
-  static async previewSection(shopId: string, section: Section): Promise<string> {
+  static async previewSection(shopId: string, section: Section, sectionKey: string): Promise<string> {
     try {
-      return await this.renderSection(shopId, section);
+      return await this.renderSection(shopId, section, sectionKey);
     } catch (error) {
       console.error('Preview render error:', error);
       return `

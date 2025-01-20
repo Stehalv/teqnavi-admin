@@ -1,6 +1,7 @@
 import { json } from '@remix-run/node';
 import { validateShopAccess } from '~/middleware/auth.server.js';
 import { PageBuilderAI } from '~/features/pagebuilder/services/pagebuilder-ai.server.js';
+import type { ShopifyPageJSON } from '~/features/pagebuilder/types/shopify.js';
 
 export async function action({ request }: { request: Request }) {
   const { shopId } = await validateShopAccess(request);

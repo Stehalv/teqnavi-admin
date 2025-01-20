@@ -1,12 +1,11 @@
 import React, { memo, useCallback } from 'react';
 import { Popover, ActionList, Box, Spinner, Text, InlineStack, Button } from '@shopify/polaris';
+import type { ActionListSection } from '@shopify/polaris';
 import { usePageBuilder } from '../../context/PageBuilderContext.js';
 import { useFetcher } from '@remix-run/react';
-import type { SectionTemplateWithBlocks } from '../../services/template.server.js';
-import type { SectionUI, SectionType } from '../../types/shopify.js';
+import type { SectionDefinition } from '../../services/template.server.js';
+import type { Section } from '../../types/shopify.js';
 import styles from './SectionTemplateSelector.module.css';
-import { getDefaultSectionSettings } from '../../utils/defaults.js';
-import { v4 as uuidv4 } from 'uuid';
 
 interface SectionTemplateSelectorProps {
   active: boolean;
@@ -15,7 +14,7 @@ interface SectionTemplateSelectorProps {
 }
 
 interface LoaderData {
-  templates: SectionTemplateWithBlocks[];
+  sections: SectionDefinition[];
   error?: string;
 }
 
@@ -27,41 +26,32 @@ export const SectionTemplateSelector = memo(function SectionTemplateSelector({
   const { addSection, page } = usePageBuilder();
   const fetcher = useFetcher<LoaderData>();
 
-  // Load templates when popover becomes active
+  // Load section definitions when popover becomes active
   React.useEffect(() => {
     if (active && !fetcher.data && fetcher.state === 'idle') {
-      fetcher.load('/api/templates');
+      fetcher.load('/api/sections');
     }
   }, [active, fetcher]);
 
-  const handleTemplateSelect = useCallback(async (template: SectionTemplateWithBlocks) => {
+  const handleSectionSelect = useCallback(async (sectionDef: SectionDefinition) => {
     try {
-      const newSection: SectionUI = {
-        id: uuidv4(),
-        templateId: template.id,
-        type: template.type,
-        settings: getDefaultSectionSettings(template.type as SectionType),
-        blocks: {},
-        block_order: []
-      };
-      addSection(newSection);
+      // Create a new section with default settings from the definition
+      const defaultSettings = sectionDef.presets?.[0]?.settings || {};
+      addSection(sectionDef.type, defaultSettings);
       onClose();
     } catch (err) {
-      console.error('Failed to insert template:', err);
+      console.error('Failed to add section:', err);
     }
   }, [addSection, onClose]);
 
-  const handleSectionCopy = useCallback((section: SectionUI) => {
+  const handleSectionCopy = useCallback((section: Section, sectionKey: string) => {
     try {
-      const newSection: SectionUI = {
-        id: uuidv4(),
-        templateId: section.templateId,
-        type: section.type,
-        settings: { ...section.settings },
+      // Copy the section with its current settings and blocks
+      addSection(section.type, {
+        ...section.settings,
         blocks: { ...section.blocks },
         block_order: [...section.block_order]
-      };
-      addSection(newSection);
+      });
       onClose();
     } catch (err) {
       console.error('Failed to copy section:', err);
@@ -70,8 +60,28 @@ export const SectionTemplateSelector = memo(function SectionTemplateSelector({
 
   const isLoading = fetcher.state !== 'idle';
   const error = fetcher.data?.error;
-  const templates = fetcher.data?.templates || [];
-  const existingSections = page?.data?.sections ? Object.values(page.data.sections) : [];
+  const sections = fetcher.data?.sections || [];
+  const existingSections = page?.data?.sections ? Object.entries(page.data.sections) : [];
+
+  const actionListSections: ActionListSection[] = [
+    {
+      title: 'New from Templates',
+      items: sections.map(section => ({
+        content: section.name,
+        onAction: () => handleSectionSelect(section)
+      }))
+    }
+  ];
+
+  if (existingSections.length > 0) {
+    actionListSections.push({
+      title: 'Copy Existing',
+      items: existingSections.map(([key, section]) => ({
+        content: `${section.type} (Copy)`,
+        onAction: () => handleSectionCopy(section, key)
+      }))
+    });
+  }
 
   return (
     <Popover
@@ -86,7 +96,7 @@ export const SectionTemplateSelector = memo(function SectionTemplateSelector({
           <Box padding="400">
             <InlineStack gap="200" align="center">
               <Spinner size="small" />
-              <Text as="span">Loading templates...</Text>
+              <Text as="span">Loading sections...</Text>
             </InlineStack>
           </Box>
         ) : error ? (
@@ -94,36 +104,8 @@ export const SectionTemplateSelector = memo(function SectionTemplateSelector({
             <Text tone="critical" as="p">{error}</Text>
           </Box>
         ) : (
-          <ActionList
-            sections={[
-              {
-                title: 'New from Templates',
-                items: templates.map(template => ({
-                  content: template.name,
-                  onAction: () => handleTemplateSelect(template)
-                }))
-              },
-              {
-                title: 'Copy Existing',
-                items: existingSections.map(section => ({
-                  content: `${section.type} (Copy)`,
-                  onAction: () => handleSectionCopy(section)
-                }))
-              }
-            ]}
-          />
+          <ActionList sections={actionListSections} />
         )}
-      </Box>
-      <Box padding="300" borderBlockStartWidth="025">
-        <Button
-          fullWidth
-          onClick={() => {
-            // Placeholder for AI generation
-            console.log('AI generation clicked');
-          }}
-        >
-          Generate with AI
-        </Button>
       </Box>
     </Popover>
   );

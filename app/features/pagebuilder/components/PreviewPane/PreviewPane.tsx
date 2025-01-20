@@ -1,18 +1,18 @@
 import React, { memo } from 'react';
-import type { PageUI, SectionUI } from '../../types/shopify.js';
+import type { PageUI, Section } from '../../types/shopify.js';
 import { SectionRenderer } from '../SectionRenderer/SectionRenderer.js';
 import styles from './PreviewPane.module.css';
 
 interface PreviewPaneProps {
   page: PageUI;
-  selectedSectionId?: string;
-  selectedBlockId?: string;
+  selectedSectionKey?: string;
+  selectedBlockKey?: string;
 }
 
 export const PreviewPane = memo(function PreviewPane({
   page,
-  selectedSectionId,
-  selectedBlockId
+  selectedSectionKey,
+  selectedBlockKey
 }: PreviewPaneProps) {
   if (!page?.data?.order) {
     return null;
@@ -20,19 +20,20 @@ export const PreviewPane = memo(function PreviewPane({
 
   return (
     <div className={styles.previewPane}>
-      {page.data.order.map((sectionId: string) => {
-        const section = page.data.sections[sectionId];
+      {page.data.order.map((sectionKey: string) => {
+        const section = page.data.sections[sectionKey];
         if (!section) return null;
         
         return (
           <div
-            key={sectionId}
-            className={`${styles.sectionWrapper} ${selectedSectionId === sectionId ? styles.selectedSection : ''}`}
+            key={sectionKey}
+            className={`${styles.sectionWrapper} ${selectedSectionKey === sectionKey ? styles.selectedSection : ''}`}
           >
             <SectionRenderer
               section={section}
-              isSelected={selectedSectionId === sectionId}
-              selectedBlockId={selectedBlockId}
+              sectionKey={sectionKey}
+              isSelected={selectedSectionKey === sectionKey}
+              selectedBlockKey={selectedBlockKey}
             />
           </div>
         );

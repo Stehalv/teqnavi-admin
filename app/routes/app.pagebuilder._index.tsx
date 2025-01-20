@@ -3,6 +3,8 @@ import { Frame, Loading, Banner, Toast, Page } from "@shopify/polaris";
 import { PageBuilder } from "~/features/pagebuilder/components/PageBuilder/PageBuilder.js";
 import { PageBuilderProvider } from "~/features/pagebuilder/context/PageBuilderContext.js";
 import type { PageUI } from "~/features/pagebuilder/types/shopify.js";
+import type { SectionRegistry } from "~/features/pagebuilder/types/templates.js";
+import type { TextField, CollectionField, RichTextField } from "~/features/pagebuilder/types/settings.js";
 
 interface SaveError {
   message: string;
@@ -40,9 +42,7 @@ export default function PageBuilderIndex() {
     isPublished: false,
     data: {
       sections: {
-        'hero1': {
-          id: 'hero1',
-          templateId: 'hero-template',
+        'hero-section': {
           type: 'hero',
           settings: {
             heading: 'Welcome to our store',
@@ -60,9 +60,7 @@ export default function PageBuilderIndex() {
           blocks: {},
           block_order: []
         },
-        'collection1': {
-          id: 'collection1',
-          templateId: 'collection-template',
+        'featured-collection': {
           type: 'featured-collection',
           settings: {
             title: 'Featured Products',
@@ -82,9 +80,7 @@ export default function PageBuilderIndex() {
           blocks: {},
           block_order: []
         },
-        'richtext1': {
-          id: 'richtext1',
-          templateId: 'richtext-template',
+        'rich-text': {
           type: 'rich-text',
           settings: {
             content: 'Our Story\n\nWelcome to our store! We offer the best products at great prices.',
@@ -98,11 +94,110 @@ export default function PageBuilderIndex() {
           block_order: []
         }
       },
-      order: ['hero1', 'collection1', 'richtext1']
+      order: ['hero-section', 'featured-collection', 'rich-text']
     },
-    templates: {},
+    settings: {
+      seo: {
+        title: 'Example Page',
+        description: 'Welcome to our store',
+        url_handle: 'example-page'
+      }
+    },
     createdAt: new Date(),
     updatedAt: new Date()
+  };
+
+  const sectionRegistry: SectionRegistry = {
+    hero: {
+      type: 'hero',
+      name: 'Hero Banner',
+      schema: {
+        settings: [
+          {
+            type: 'text',
+            key: 'heading',
+            label: 'Heading',
+            defaultValue: 'Welcome'
+          } as TextField,
+          {
+            type: 'text',
+            key: 'subheading',
+            label: 'Subheading',
+            defaultValue: 'Shop the latest trends'
+          } as TextField
+        ]
+      },
+      liquid: `
+        <div class="hero-banner" style="background-color: {{ section.settings.background_value }}">
+          <div class="hero-content">
+            <h1>{{ section.settings.heading }}</h1>
+            <p>{{ section.settings.subheading }}</p>
+            {% if section.settings.button_text != blank %}
+              <a href="{{ section.settings.button_link }}" class="button">
+                {{ section.settings.button_text }}
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      `
+    },
+    'featured-collection': {
+      type: 'featured-collection',
+      name: 'Featured Collection',
+      schema: {
+        settings: [
+          {
+            type: 'text',
+            key: 'title',
+            label: 'Title',
+            defaultValue: 'Featured Products'
+          } as TextField,
+          {
+            type: 'collection',
+            key: 'collection_id',
+            label: 'Collection'
+          } as CollectionField
+        ]
+      },
+      liquid: `
+        <div class="featured-collection">
+          <h2>{{ section.settings.title }}</h2>
+          {% assign collection = collections[section.settings.collection_id] %}
+          {% if collection != blank %}
+            <div class="product-grid">
+              {% for product in collection.products limit: section.settings.products_to_show %}
+                <div class="product-card">
+                  <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
+                  <h3>{{ product.title }}</h3>
+                  <p>{{ product.price | money }}</p>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      `
+    },
+    'rich-text': {
+      type: 'rich-text',
+      name: 'Rich Text',
+      schema: {
+        settings: [
+          {
+            type: 'richtext',
+            key: 'content',
+            label: 'Content',
+            defaultValue: 'Welcome to our store'
+          } as RichTextField
+        ]
+      },
+      liquid: `
+        <div class="rich-text">
+          <div class="rich-text__content">
+            {{ section.settings.content }}
+          </div>
+        </div>
+      `
+    }
   };
 
   return (
@@ -111,18 +206,13 @@ export default function PageBuilderIndex() {
       
       {saveError && (
         <Banner
-          title="Error"
+          title={saveError.message}
           tone="critical"
           onDismiss={() => setSaveError(null)}
         >
-          <p>{saveError.message}</p>
           {saveError.details && <p>{saveError.details}</p>}
         </Banner>
       )}
-
-      <PageBuilderProvider initialPage={initialPage} onSave={handleSave}>
-        <PageBuilder />
-      </PageBuilderProvider>
 
       {showSaveToast && (
         <Toast
@@ -130,6 +220,16 @@ export default function PageBuilderIndex() {
           onDismiss={() => setShowSaveToast(false)}
         />
       )}
+
+      <Page fullWidth>
+        <PageBuilderProvider
+          initialPage={initialPage}
+          sectionRegistry={sectionRegistry}
+          onSave={handleSave}
+        >
+          <PageBuilder />
+        </PageBuilderProvider>
+      </Page>
     </Frame>
   );
 } 

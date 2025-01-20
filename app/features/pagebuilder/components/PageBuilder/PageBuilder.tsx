@@ -9,13 +9,13 @@ import { PreviewPane } from '~/features/pagebuilder/components/PreviewPane/Previ
 import { Section } from '../Section/Section.js';
 import { Block } from '../Block/Block.js';
 import styles from './PageBuilder.module.css';
-import type { PageUI, DragItemType, SectionUI, BlockUI } from '../../types/shopify.js';
+import type { PageUI, DragItemType, Section as SectionType, Block as BlockType } from '../../types/shopify.js';
 
 export function PageBuilder() {
   const { 
     page,
-    selectedSectionId,
-    selectedBlockId,
+    selectedSectionKey,
+    selectedBlockKey,
     isDragging,
     dragItem,
     isLoading,
@@ -30,10 +30,10 @@ export function PageBuilder() {
   const handleDragStart = useCallback((event: DragStartEvent) => {
     const { active } = event;
     startDrag({
-      id: active.id as string,
+      key: active.id as string,
       type: (active.data.current?.type || 'SECTION') as DragItemType,
       index: active.data.current?.sortable?.index,
-      parentId: active.data.current?.parentId
+      parentKey: active.data.current?.parentKey
     });
   }, [startDrag]);
 
@@ -42,10 +42,10 @@ export function PageBuilder() {
     
     if (over && active.id !== over.id) {
       endDrag({
-        id: active.id as string,
+        key: active.id as string,
         type: (active.data.current?.type || 'SECTION') as DragItemType,
         index: over.data.current?.sortable?.index || 0,
-        parentId: active.data.current?.parentId
+        parentKey: active.data.current?.parentKey
       });
     }
   }, [endDrag]);
@@ -53,13 +53,14 @@ export function PageBuilder() {
   const renderDragOverlay = useCallback(() => {
     if (!dragItem) return null;
 
-    if (dragItem.type === 'SECTION' && dragItem.id) {
-      const section = page.data.sections[dragItem.id];
+    if (dragItem.type === 'SECTION' && dragItem.key) {
+      const section = page.data.sections[dragItem.key];
       if (section) {
         return (
           <div className={styles.dragOverlay}>
             <Section
               section={section}
+              sectionKey={dragItem.key}
               isSelected={false}
               isDragging={true}
             />
@@ -68,18 +69,17 @@ export function PageBuilder() {
       }
     }
 
-    if (dragItem.type === 'BLOCK' && dragItem.parentId && dragItem.id) {
-      const section = page.data.sections[dragItem.parentId];
-      const block = section?.blocks?.[dragItem.id] as BlockUI & { id: string; parentId: string };
+    if (dragItem.type === 'BLOCK' && dragItem.parentKey && dragItem.key) {
+      const section = page.data.sections[dragItem.parentKey];
+      const block = section?.blocks?.[dragItem.key];
       if (block) {
-        block.id = dragItem.id;
-        block.parentId = dragItem.parentId;
         return (
           <div className={styles.dragOverlay}>
             <Block
               block={block}
+              blockKey={dragItem.key}
+              parentKey={dragItem.parentKey}
               isSelected={false}
-              parentId={dragItem.parentId}
             />
           </div>
         );
@@ -123,7 +123,7 @@ export function PageBuilder() {
             <div className={styles.sidebar}>
               <SectionList
                 page={page}
-                selectedSectionId={selectedSectionId}
+                selectedSectionKey={selectedSectionKey}
                 onSelectSection={selectSection}
                 onDeleteSection={deleteSection}
               />
@@ -132,8 +132,8 @@ export function PageBuilder() {
             <div className={styles.main}>
               <PreviewPane
                 page={page}
-                selectedSectionId={selectedSectionId}
-                selectedBlockId={selectedBlockId}
+                selectedSectionKey={selectedSectionKey}
+                selectedBlockKey={selectedBlockKey}
               />
             </div>
             

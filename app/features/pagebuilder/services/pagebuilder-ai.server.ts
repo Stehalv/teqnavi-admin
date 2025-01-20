@@ -1,171 +1,148 @@
-import type { SettingField } from '../types.js';
-import { TemplateService } from './template.server.js';
+import type { SettingField } from '../types/shopify.js';
 import { AIService } from '~/services/ai/ai.server.js';
 
 interface AIGeneratedBlock {
   type: string;
-  name: string;
   settings: Record<string, any>;
   schema: {
     settings: SettingField[];
   };
-  liquid: string;
 }
 
 interface AIGeneratedSection {
   type: string;
-  name: string;
   settings: Record<string, any>;
   schema: {
     settings: SettingField[];
+    blocks?: {
+      type: string;
+      name: string;
+      settings: SettingField[];
+    }[];
   };
-  liquid: string;
-  blocks: AIGeneratedBlock[];
+  blocks?: Record<string, AIGeneratedBlock>;
+  block_order?: string[];
 }
 
 interface AIGeneratedPage {
-  title: string;
-  sections: AIGeneratedSection[];
-  settings: {
-    seo: {
-      title: string;
-      description: string;
-      url_handle: string;
+  sections: Record<string, AIGeneratedSection>;
+  order: string[];
+  settings?: {
+    seo?: {
+      title?: string;
+      description?: string;
+      url_handle?: string;
     };
   };
 }
 
-const PAGE_SYSTEM_PROMPT = `You are a Shopify theme expert that generates complete section templates with liquid code and settings. 
-Generate sections that follow Shopify's best practices for theme development.
+export class PageBuilderAI {
+  private static readonly BASE_PROMPT = `You are a Shopify theme expert that generates complete sections with settings and blocks. 
+Generate sections that follow Shopify's best practices for theme development.`;
+
+  private static readonly PAGE_PROMPT = `${PageBuilderAI.BASE_PROMPT}
 Each section should include:
-- A descriptive name and type
-- Complete liquid template code
+- A descriptive type identifier (e.g., 'hero-banner', 'featured-collection')
 - Settings schema with appropriate fields
 - Initial settings values
-- Block templates if needed`;
+- Block definitions if needed
 
-const PAGE_RESPONSE_EXAMPLE = `{
-  "title": "Page Title",
-  "sections": [{
-    "type": "section-type",
-    "name": "Section Name",
-    "settings": { setting values },
-    "schema": {
-      "settings": [{ setting field definitions }]
-    },
-    "liquid": "{% liquid template code %}",
+The response should be valid JSON matching Shopify's page.json structure:
+{
+  "sections": {
+    "section-key": {
+      "type": "section-type",
+      "settings": { setting values },
+      "blocks": {
+        "block-key": {
+          "type": "block-type",
+          "settings": { setting values }
+        }
+      },
+      "block_order": ["block-key"],
+      "schema": {
+        "settings": [{ setting field definitions }],
+        "blocks": [{
+          "type": "block-type",
+          "name": "Block Name",
+          "settings": [{ setting field definitions }]
+        }]
+      }
+    }
+  },
+  "order": ["section-key"]
+}`;
+
+  private static getSectionPrompt(type: string): string {
+    return `${this.BASE_PROMPT}
+Generate a section that follows Shopify's best practices for theme development.
+The section type should be "${type}".
+Include:
+- Settings schema with appropriate fields
+- Initial settings values
+- Block definitions if needed
+
+The response should be valid JSON matching this structure:
+{
+  "type": "${type}",
+  "settings": { setting values },
+  "blocks": {
+    "block-key": {
+      "type": "block-type",
+      "settings": { setting values }
+    }
+  },
+  "block_order": ["block-key"],
+  "schema": {
+    "settings": [{ setting field definitions }],
     "blocks": [{
       "type": "block-type",
       "name": "Block Name",
-      "settings": { setting values },
-      "schema": {
-        "settings": [{ setting field definitions }]
-      },
-      "liquid": "{% liquid block template %}"
+      "settings": [{ setting field definitions }]
     }]
-  }],
-  "settings": {
-    "seo": {
-      "title": "SEO Title",
-      "description": "SEO Description",
-      "url_handle": "page-url"
-    }
   }
 }`;
+  }
 
-const SECTION_RESPONSE_EXAMPLE = `{
-  "type": "section-type",
-  "name": "Section Name",
+  private static getBlockPrompt(sectionType: string, blockType: string): string {
+    return `${this.BASE_PROMPT}
+Generate a block for a ${sectionType} section that follows Shopify's best practices.
+The block type should be "${blockType}".
+Include:
+- Settings schema with appropriate fields
+- Initial settings values
+
+The response should be valid JSON matching this structure:
+{
+  "type": "${blockType}",
   "settings": { setting values },
   "schema": {
     "settings": [{ setting field definitions }]
-  },
-  "liquid": "{% liquid template code %}",
-  "blocks": [{
-    "type": "block-type",
-    "name": "Block Name",
-    "settings": { setting values },
-    "schema": {
-      "settings": [{ setting field definitions }]
-    },
-    "liquid": "{% liquid block template %}"
-  }]
+  }
 }`;
-
-export class PageBuilderAI {
-  static async generatePage(shopId: string, prompt: string) {
-    const generatedPage = await AIService.generateFromPrompt<AIGeneratedPage>(
-      prompt,
-      PAGE_SYSTEM_PROMPT,
-      PAGE_RESPONSE_EXAMPLE
-    );
-
-    // Create sections and blocks in parallel
-    const sectionPromises = generatedPage.sections.map(async (section) => {
-      // Create section template
-      const sectionTemplate = await TemplateService.createSectionTemplate(shopId, {
-        name: section.name,
-        type: section.type,
-        schema: section.schema,
-        liquid: section.liquid
-      });
-
-      // Create block templates
-      const blockPromises = section.blocks.map(block => 
-        TemplateService.createBlockTemplate(shopId, sectionTemplate.id, {
-          name: block.name,
-          type: block.type,
-          schema: block.schema,
-          liquid: block.liquid
-        })
-      );
-
-      await Promise.all(blockPromises);
-
-      return {
-        template: sectionTemplate,
-        section
-      };
-    });
-
-    const results = await Promise.all(sectionPromises);
-
-    return {
-      templates: results,
-      settings: generatedPage.settings
-    };
   }
 
-  static async generateSection(shopId: string, prompt: string, type: string) {
-    const section = await AIService.generateFromPrompt<AIGeneratedSection>(
-      prompt,
-      PAGE_SYSTEM_PROMPT,
-      SECTION_RESPONSE_EXAMPLE.replace('section-type', type)
-    );
+  static async generatePage(shopId: string, prompt: string): Promise<AIGeneratedPage> {
+    const result = await AIService.generate<AIGeneratedPage>(prompt, this.PAGE_PROMPT);
+    if (!result.success || !result.data) {
+      throw new Error('Failed to generate page');
+    }
+    return result.data;
+  }
 
-    // Create section template
-    const sectionTemplate = await TemplateService.createSectionTemplate(shopId, {
-      name: section.name,
-      type: section.type,
-      schema: section.schema,
-      liquid: section.liquid
-    });
+  static async generateSection(shopId: string, type: string): Promise<AIGeneratedSection> {
+    const result = await AIService.generate<AIGeneratedSection>(type, this.getSectionPrompt(type));
+    if (!result.success || !result.data) {
+      throw new Error('Failed to generate section');
+    }
+    return result.data;
+  }
 
-    // Create block templates
-    const blockPromises = section.blocks.map(block => 
-      TemplateService.createBlockTemplate(shopId, sectionTemplate.id, {
-        name: block.name,
-        type: block.type,
-        schema: block.schema,
-        liquid: block.liquid
-      })
-    );
-
-    await Promise.all(blockPromises);
-
-    return {
-      template: sectionTemplate,
-      section
-    };
+  static async generateBlock(shopId: string, sectionType: string, blockType: string): Promise<AIGeneratedBlock> {
+    const result = await AIService.generate<AIGeneratedBlock>(blockType, this.getBlockPrompt(sectionType, blockType));
+    if (!result.success || !result.data) {
+      throw new Error('Failed to generate block');
+    }
+    return result.data;
   }
 } 

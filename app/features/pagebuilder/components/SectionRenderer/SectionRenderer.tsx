@@ -1,37 +1,39 @@
 import React, { memo } from 'react';
 import { Card, Text, Button, BlockStack, Icon } from '@shopify/polaris';
 import { ImageIcon, ProductIcon } from '@shopify/polaris-icons';
-import type { SectionUI, BlockUI } from '../../types/shopify.js';
+import type { Section, Block } from '../../types/shopify.js';
 import styles from './SectionRenderer.module.css';
 
 interface SectionRendererProps {
-  section: SectionUI;
+  section: Section;
+  sectionKey: string;
   isSelected: boolean;
-  selectedBlockId?: string;
+  selectedBlockKey?: string;
 }
 
 export const SectionRenderer = memo(function SectionRenderer({
   section,
+  sectionKey,
   isSelected,
-  selectedBlockId
+  selectedBlockKey
 }: SectionRendererProps) {
   // Render blocks based on section.blocks and section.block_order
   const renderBlocks = () => {
     if (!section.blocks || !section.block_order) return null;
 
-    return section.block_order.map((blockId: string) => {
-      const block = section.blocks[blockId] as BlockUI;
+    return section.block_order.map((blockKey: string) => {
+      const block = section.blocks[blockKey];
       if (!block) return null;
 
-      return renderBlock(block, blockId);
+      return renderBlock(block, blockKey);
     });
   };
 
-  const renderBlock = (block: BlockUI, blockId: string) => {
+  const renderBlock = (block: Block, blockKey: string) => {
     switch (block.type) {
       case 'text':
         return (
-          <div key={blockId} className={`${styles.blockWrapper} ${selectedBlockId === blockId ? styles.selectedBlock : ''}`}>
+          <div key={blockKey} className={`${styles.blockWrapper} ${selectedBlockKey === blockKey ? styles.selectedBlock : ''}`}>
             <Text
               as="p"
               variant={block.settings.size === 'large' ? 'headingMd' : block.settings.size === 'medium' ? 'bodyLg' : 'bodyMd'}
@@ -46,7 +48,7 @@ export const SectionRenderer = memo(function SectionRenderer({
 
       case 'image':
         return (
-          <div key={blockId} className={`${styles.blockWrapper} ${selectedBlockId === blockId ? styles.selectedBlock : ''}`}>
+          <div key={blockKey} className={`${styles.blockWrapper} ${selectedBlockKey === blockKey ? styles.selectedBlock : ''}`}>
             {block.settings.image ? (
               <img
                 src={block.settings.image}
@@ -65,7 +67,7 @@ export const SectionRenderer = memo(function SectionRenderer({
 
       case 'button':
         return (
-          <div key={blockId} className={`${styles.blockWrapper} ${selectedBlockId === blockId ? styles.selectedBlock : ''}`}>
+          <div key={blockKey} className={`${styles.blockWrapper} ${selectedBlockKey === blockKey ? styles.selectedBlock : ''}`}>
             <Button
               variant={block.settings.style}
               size={block.settings.size === 'small' ? 'slim' : block.settings.size === 'large' ? 'large' : 'medium'}
@@ -83,7 +85,7 @@ export const SectionRenderer = memo(function SectionRenderer({
         const productTitle = block.settings.product_id ? 'Product Title' : 'Select a product';
 
         return (
-          <div key={blockId} className={`${styles.blockWrapper} ${selectedBlockId === blockId ? styles.selectedBlock : ''}`}>
+          <div key={blockKey} className={`${styles.blockWrapper} ${selectedBlockKey === blockKey ? styles.selectedBlock : ''}`}>
             <Card>
               <BlockStack gap="200">
                 <div className={styles.productImage}>
@@ -115,7 +117,7 @@ export const SectionRenderer = memo(function SectionRenderer({
 
       default:
         return (
-          <div key={blockId} className={`${styles.blockWrapper} ${selectedBlockId === blockId ? styles.selectedBlock : ''}`}>
+          <div key={blockKey} className={`${styles.blockWrapper} ${selectedBlockKey === blockKey ? styles.selectedBlock : ''}`}>
             <Text as="p" tone="critical">Unknown block type</Text>
           </div>
         );

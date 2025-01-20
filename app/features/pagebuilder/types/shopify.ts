@@ -78,6 +78,7 @@ export interface Section {
 
 // Shopify Page JSON Structure
 export interface ShopifyPageJSON {
+  name?: string;
   sections: Record<string, Section>;
   order: string[];
 }
@@ -90,7 +91,6 @@ export interface Page {
   handle: string;
   isPublished: boolean;
   data: ShopifyPageJSON;
-  templates: Record<string, SectionTemplate>;
   createdAt: Date;
   updatedAt: Date;
   publishedAt?: Date;
@@ -103,7 +103,6 @@ export interface PageVersion {
   pageId: string;
   version: number;
   data: ShopifyPageJSON;
-  templates: Record<string, SectionTemplate>;
   message?: string;
   createdAt: Date;
   createdBy?: string;
@@ -116,17 +115,17 @@ export type SectionType = 'hero' | 'featured-collection' | 'rich-text' | 'image-
 export type BlockType = 'text' | 'image' | 'button' | 'product';
 
 export interface DragItem {
-  id: string;
+  key: string;
   type: DragItemType;
   index?: number;
-  parentId?: string;
+  parentKey?: string;
 }
 
 export interface DropResult {
-  id: string;
+  key: string;
   type: DragItemType;
   index: number;
-  parentId?: string;
+  parentKey?: string;
 }
 
 // UI Wrapper Types for Page Builder
@@ -148,6 +147,6 @@ export interface ShopifyPageUIJSON {
 
 // UI version of Page
 export interface PageUI extends Omit<Page, 'data'> {
-  data: ShopifyPageUIJSON;
+  data: ShopifyPageJSON;
   settings: Record<string, any>;
 } 

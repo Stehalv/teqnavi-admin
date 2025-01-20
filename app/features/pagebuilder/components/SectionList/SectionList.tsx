@@ -1,31 +1,30 @@
 import React, { memo, useState } from 'react';
 import { Text, Button, Icon, BlockStack, ButtonGroup, InlineStack } from '@shopify/polaris';
 import { DragHandleIcon, DeleteIcon } from '@shopify/polaris-icons';
-import type { PageUI, BlockUI } from '../../types/shopify.js';
+import type { PageUI, Block } from '../../types/shopify.js';
 import { SectionTemplateSelector } from '../SectionTemplateSelector/SectionTemplateSelector.js';
 import { BlockTemplateSelector } from '../BlockTemplateSelector/BlockTemplateSelector.js';
 import styles from './SectionList.module.css';
 
 interface SectionListProps {
   page: PageUI;
-  selectedSectionId?: string;
-  onSelectSection: (sectionId: string) => void;
-  onDeleteSection: (sectionId: string) => void;
+  selectedSectionKey?: string;
+  onSelectSection: (sectionKey?: string) => void;
+  onDeleteSection: (sectionKey: string) => void;
 }
 
 export const SectionList = memo(function SectionList({
   page,
-  selectedSectionId,
+  selectedSectionKey,
   onSelectSection,
   onDeleteSection
 }: SectionListProps) {
   const [showSectionTemplates, setShowSectionTemplates] = useState(false);
   const [showBlockTemplates, setShowBlockTemplates] = useState<string | null>(null);
 
-  const supportsBlocks = (sectionId: string) => {
-    const section = page.data.sections[sectionId];
-    const template = page.templates[section.type];
-    return template?.blocks && template.blocks.length > 0;
+  const supportsBlocks = (sectionKey: string) => {
+    const section = page.data.sections[sectionKey];
+    return section.type && section.blocks;
   };
 
   return (
@@ -33,17 +32,17 @@ export const SectionList = memo(function SectionList({
       <BlockStack gap="400">
         <Text as="h2" variant="headingMd">Sections</Text>
         <div className={styles.sections}>
-          {page.data.order.map((sectionId: string) => {
-            const section = page.data.sections[sectionId];
-            const isSelected = selectedSectionId === sectionId;
-            const hasBlockSupport = supportsBlocks(sectionId);
+          {page.data.order.map((sectionKey: string) => {
+            const section = page.data.sections[sectionKey];
+            const isSelected = selectedSectionKey === sectionKey;
+            const hasBlockSupport = supportsBlocks(sectionKey);
             
             return (
               <div
-                key={sectionId}
+                key={sectionKey}
                 className={`${styles.section} ${isSelected ? styles.selected : ''}`}
               >
-                <div className={styles.sectionHeader} onClick={() => onSelectSection(sectionId)}>
+                <div className={styles.sectionHeader} onClick={() => onSelectSection(sectionKey)}>
                   <InlineStack align="space-between" blockAlign="center" gap="200" wrap={false}>
                     <InlineStack gap="200" blockAlign="center" wrap={false}>
                       <div className={styles.sectionDragHandle}>
@@ -63,7 +62,7 @@ export const SectionList = memo(function SectionList({
                         icon={DeleteIcon}
                         variant="plain"
                         tone="critical"
-                        onClick={() => onDeleteSection(sectionId)}
+                        onClick={() => onDeleteSection(sectionKey)}
                       />
                     </ButtonGroup>
                   </InlineStack>
@@ -72,10 +71,10 @@ export const SectionList = memo(function SectionList({
                   <div className={styles.sectionBlocks}>
                     {section.block_order.length > 0 && (
                       <div className={styles.blockList}>
-                        {section.block_order.map((blockId) => {
-                          const block = section.blocks[blockId] as BlockUI;
+                        {section.block_order.map((blockKey) => {
+                          const block = section.blocks[blockKey];
                           return (
-                            <div key={blockId} className={styles.block}>
+                            <div key={blockKey} className={styles.block}>
                               <Text as="p" variant="bodySm">{block.type}</Text>
                             </div>
                           );
@@ -83,10 +82,10 @@ export const SectionList = memo(function SectionList({
                       </div>
                     )}
                     <BlockTemplateSelector
-                      active={showBlockTemplates === sectionId}
+                      active={showBlockTemplates === sectionKey}
                       activator={
                         <Button 
-                          onClick={function() { setShowBlockTemplates(sectionId); }}
+                          onClick={function() { setShowBlockTemplates(sectionKey); }}
                           variant="plain"
                           fullWidth
                         >
@@ -94,7 +93,7 @@ export const SectionList = memo(function SectionList({
                         </Button>
                       }
                       onClose={() => setShowBlockTemplates(null)}
-                      sectionId={sectionId}
+                      sectionKey={sectionKey}
                       sectionType={section.type}
                     />
                   </div>
