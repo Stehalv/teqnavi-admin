@@ -1,5 +1,9 @@
 .sectionList {
   width: 100%;
+  background: white;
+  border-radius: var(--p-border-radius-200);
+  padding: var(--p-space-400);
+  box-shadow: var(--p-shadow-100);
 }
 
 .sections {

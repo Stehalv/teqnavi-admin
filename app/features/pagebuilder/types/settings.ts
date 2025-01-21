@@ -40,6 +40,7 @@ export interface RangeField extends BaseSettingField {
   step: number;
   unit?: string;
   suffix?: string;
+  prefix?: string;
 }
 
 export interface SelectField extends BaseSettingField {

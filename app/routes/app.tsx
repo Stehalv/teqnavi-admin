@@ -3,7 +3,9 @@ import { Outlet, useLoaderData, useRouteError } from "@remix-run/react";
 import { boundary } from "@shopify/shopify-app-remix/server";
 import { AppProvider } from "@shopify/shopify-app-remix/react";
 import { Frame } from "@shopify/polaris";
+import { AppProvider as PolarisProvider } from '@shopify/polaris';
 import polarisStyles from "@shopify/polaris/build/esm/styles.css?url";
+import polarisTranslations from '@shopify/polaris/locales/en.json';
 import { Suspense } from "react";
 
 import { authenticate } from "../shopify.server.js";
@@ -26,18 +28,20 @@ export default function App() {
 
   return (
     <AppProvider isEmbeddedApp apiKey={apiKey}>
-      <ui-nav-menu>
-        <a href="/app">Dashboard</a>
-        <a href="/app/flows">Flow Editor</a>
-        <a href="/app/pagebuilder">Pagebuilder</a>
-        <a href="/app/integrations">Integrations</a>
-        <a href="/app/settings">Settings</a>
-      </ui-nav-menu>
-      <Frame>
-        <Suspense fallback={null}>
-          <Outlet />
-        </Suspense>
-      </Frame>
+      <PolarisProvider i18n={polarisTranslations}>
+        <ui-nav-menu>
+          <a href="/app">Dashboard</a>
+          <a href="/app/flows">Flow Editor</a>
+          <a href="/app/pagebuilder">Pagebuilder</a>
+          <a href="/app/integrations">Integrations</a>
+          <a href="/app/settings">Settings</a>
+        </ui-nav-menu>
+        <Frame>
+          <Suspense fallback={null}>
+            <Outlet />
+          </Suspense>
+        </Frame>
+      </PolarisProvider>
     </AppProvider>
   );
 }

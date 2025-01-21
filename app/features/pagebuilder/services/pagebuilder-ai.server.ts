@@ -3,6 +3,7 @@ import type { AIGeneratedTemplate, AIGeneratedPage } from '../types/ai.js';
 import type { SettingField, SectionTemplate, BlockTemplate, TemplateSchema, SectionCapabilities } from '../types/shopify.js';
 import { TemplateService } from './template.server.js';
 import { PageService } from './page.server.js';
+import { AIProvider, OpenAIProvider, AnthropicProvider } from './ai-providers.js';
 
 export interface SectionLiquidTemplate {
   name: string;
@@ -24,10 +25,34 @@ interface GeneratedSection {
 }
 
 export class PageBuilderAI {
+  private static provider: AIProvider;
+
+  private static getProvider(): AIProvider {
+    if (!this.provider) {
+      const providerType = process.env.AI_PROVIDER?.toLowerCase() ?? 'openai';
+      
+      switch (providerType) {
+        case 'anthropic':
+          if (!process.env.ANTHROPIC_API_KEY) {
+            throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');
+          }
+          this.provider = new AnthropicProvider(process.env.ANTHROPIC_API_KEY);
+          break;
+        
+        case 'openai':
+        default:
+          if (!process.env.OPENAI_API_KEY) {
+            throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
+          }
+          this.provider = new OpenAIProvider(process.env.OPENAI_API_KEY);
+          break;
+      }
+    }
+    
+    return this.provider;
+  }
+
   static readonly MODEL = "gpt-4-turbo-preview";
-  private static readonly openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
 
   static readonly PAGE_PROMPT = `Generate a Shopify page JSON that MUST follow this EXACT structure:
 {
@@ -220,18 +245,13 @@ IMPORTANT: ALL setting IDs must use underscores (_) not hyphens (-). Examples:
   static async generatePage(shopId: string, prompt: string): Promise<AIGeneratedPage> {
     try {
       // Generate page JSON with sections
-      const pageResponse = await this.openai.chat.completions.create({
-        model: this.MODEL,
-        messages: [
-          { role: "system", content: this.PAGE_PROMPT },
-          { role: "user", content: prompt }
-        ],
-        response_format: { type: "json_object" },
+      const pageJson = await this.getProvider().generateCompletion(prompt, {
+        systemPrompt: this.PAGE_PROMPT,
         temperature: 0.7,
-        max_tokens: 4000
+        maxTokens: 4000,
+        format: 'json'
       });
 
-      const pageJson = pageResponse.choices[0]?.message?.content;
       if (!pageJson) throw new Error("Failed to generate page");
 
       console.log('AI Response:', pageJson);
@@ -333,7 +353,8 @@ IMPORTANT: ALL setting IDs must use underscores (_) not hyphens (-). Examples:
     } catch (error) {
       console.error('Error in generatePage:', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        stack: error instanceof Error ? error.stack : undefined,
+        provider: process.env.AI_PROVIDER
       });
       throw error;
     }
@@ -352,18 +373,13 @@ ${JSON.stringify(exampleSection?.settings || {}, null, 2)}
 ${exampleSection?.blocks ? `And these blocks:
 ${JSON.stringify(exampleSection.blocks, null, 2)}` : ''}`;
 
-    const response = await this.openai.chat.completions.create({
-      model: this.MODEL,
-      messages: [
-        { role: "system", content: this.TEMPLATE_PROMPT },
-        { role: "user", content: sectionPrompt }
-      ],
-      response_format: { type: "json_object" },
+    const templateJson = await this.getProvider().generateCompletion(sectionPrompt, {
+      systemPrompt: this.TEMPLATE_PROMPT,
       temperature: 0.7,
-      max_tokens: 4000
+      maxTokens: 4000,
+      format: 'json'
     });
 
-    const templateJson = response.choices[0]?.message?.content;
     if (!templateJson) throw new Error(`Failed to generate template for ${type}`);
 
     try {
@@ -373,7 +389,6 @@ ${JSON.stringify(exampleSection.blocks, null, 2)}` : ''}`;
       // Convert to AIGeneratedTemplate format
       const sectionInstances: Record<string, { settings: Record<string, any>; liquid: string; blocks?: any; block_order?: string[] }> = {};
       
-      // Populate section instances from the sections parameter
       Object.entries(sections)
           .filter(([_, section]) => section.type === type)
           .forEach(([key, section]) => {
@@ -413,18 +428,13 @@ ${JSON.stringify(exampleSection.blocks, null, 2)}` : ''}`;
 4. Accessibility features
 5. Performance optimizations`;
 
-    const response = await this.openai.chat.completions.create({
-      model: this.MODEL,
-      messages: [
-        { role: "system", content: this.TEMPLATE_PROMPT },
-        { role: "user", content: blockPrompt }
-      ],
-      response_format: { type: "json_object" },
+    const templateJson = await this.getProvider().generateCompletion(blockPrompt, {
+      systemPrompt: this.TEMPLATE_PROMPT,
       temperature: 0.7,
-      max_tokens: 2000
+      maxTokens: 2000,
+      format: 'json'
     });
 
-    const templateJson = response.choices[0]?.message?.content;
     if (!templateJson) throw new Error(`Failed to generate block template for ${type}`);
 
     const template = JSON.parse(templateJson);

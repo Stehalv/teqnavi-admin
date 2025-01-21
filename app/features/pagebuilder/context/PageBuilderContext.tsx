@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useCallback, useMemo } from 'react';
+import * as React from 'react';
+import { createContext, useContext, useCallback, useMemo } from 'react';
 import { useImmer } from 'use-immer';
 import { v4 as uuidv4 } from 'uuid';
 import type { 
@@ -66,7 +67,7 @@ interface PageBuilderProviderProps {
   onPublish?: (page: PageUI) => Promise<void>;
 }
 
-const PageBuilderContext = createContext<PageBuilderContextType | null>(null);
+const PageBuilderContext = React.createContext<PageBuilderContextType | null>(null);
 
 export function PageBuilderProvider({ 
   children, 
@@ -76,7 +77,7 @@ export function PageBuilderProvider({
   onPublish
 }: PageBuilderProviderProps) {
   // Initialize block_order for any sections that have blocks but no block_order
-  const processedInitialPage = useMemo(() => {
+  const processedInitialPage = React.useMemo(() => {
     const processedPage = { ...initialPage };
     Object.entries(processedPage.data.sections).forEach(([sectionKey, section]) => {
       if (section.blocks && !section.block_order) {
@@ -228,14 +229,14 @@ export function PageBuilderProvider({
       // Add the new block
       section.blocks[blockKey] = newBlock;
 
-      // Initialize block_order with existing blocks if undefined
+      // Initialize or update block_order array
       if (!section.block_order) {
         const existingBlockKeys = Object.keys(section.blocks);
-        section.block_order = existingBlockKeys.filter(key => key !== blockKey);
+        const filteredKeys = existingBlockKeys.filter(key => key !== blockKey);
+        section.block_order = [...filteredKeys, blockKey];
+      } else {
+        section.block_order = [...section.block_order, blockKey];
       }
-
-      // Add the new block to block_order
-      section.block_order.push(blockKey);
 
       console.log('Block settings initialized:', {
         blockKey,
@@ -288,7 +289,7 @@ export function PageBuilderProvider({
     updateState(draft => {
       const section = draft.page.data.sections[sectionKey];
       if (section) {
-        section.block_order = newOrder;
+        section.block_order = [...newOrder];
       }
     });
   }, []);

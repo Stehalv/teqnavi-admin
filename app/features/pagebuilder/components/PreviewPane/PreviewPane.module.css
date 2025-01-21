@@ -1,7 +1,8 @@
 .previewPane {
   flex: 1;
   overflow-y: auto;
-  background-color: var(--p-surface-subdued);
+  background: white;
+  background-size: 100% 100%;
   padding: 2rem;
 }
 

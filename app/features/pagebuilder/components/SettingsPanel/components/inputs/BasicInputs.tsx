@@ -92,21 +92,30 @@ export const RangeInput = memo(function RangeInput({
   value,
   onChange
 }: InputProps<RangeField>) {
-  const handleChange = useCallback((value: number) => {
-    onChange(value);
-  }, [onChange]);
+  const handleChange = useCallback((newValue: number) => {
+    // If the original value has a unit (e.g. "33px"), extract it
+    const unit = typeof value === 'string' ? value.replace(/[0-9]/g, '') : '';
+    // Append the unit to the new value
+    const finalValue = unit ? `${newValue}${unit}` : newValue;
+    onChange(finalValue);
+  }, [onChange, value]);
+
+  // Extract numeric value from string with unit if needed
+  const numericValue = typeof value === 'string' 
+    ? parseInt(value.replace(/[^0-9]/g, ''), 10) 
+    : value;
 
   return (
     <RangeSlider
       label={field.label}
-      value={value ?? field.default ?? field.min}
+      value={numericValue ?? field.default ?? field.min}
       min={field.min}
       max={field.max}
       step={field.step}
       helpText={field.helpText}
       suffix={
         <Text as="span" variant="bodyMd">
-          {value}
+          {numericValue}
           {field.suffix && ` ${field.suffix}`}
           {field.unit && ` ${field.unit}`}
         </Text>
