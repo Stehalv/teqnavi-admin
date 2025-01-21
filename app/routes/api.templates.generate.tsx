@@ -3,6 +3,7 @@ import type { ActionFunction } from "@remix-run/node";
 import { PageBuilderAI } from "~/features/pagebuilder/services/pagebuilder-ai.server.js";
 import { validateShopAccess } from "~/middleware/auth.server.js";
 import type { Section } from "~/features/pagebuilder/types/shopify.js";
+import { TemplateService } from "~/features/pagebuilder/services/template.server.js";
 
 export const action: ActionFunction = async ({ request }) => {
   const { shopId } = await validateShopAccess(request);
@@ -20,7 +21,8 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   try {
-    const result = await PageBuilderAI.generateSection(shopId, type);
+    const result = await PageBuilderAI.generateSection(type);
+    await TemplateService.saveAIGeneratedTemplate(shopId, type, result);
     return json({ success: true, data: result });
   } catch (error) {
     console.error('Error generating section:', error);

@@ -33,7 +33,7 @@ export const CheckboxInput = memo(function CheckboxInput({
   return (
     <Checkbox
       label={field.label}
-      checked={value ?? field.defaultValue ?? false}
+      checked={value ?? field.default ?? false}
       helpText={field.helpText}
       onChange={onChange}
     />
@@ -49,7 +49,7 @@ export const NumberInput = memo(function NumberInput({
     <TextField
       label={field.label}
       type="number"
-      value={value?.toString() ?? field.defaultValue?.toString() ?? ""}
+      value={value?.toString() ?? field.default?.toString() ?? ""}
       helpText={field.helpText}
       min={field.min}
       max={field.max}
@@ -99,7 +99,7 @@ export const RangeInput = memo(function RangeInput({
   return (
     <RangeSlider
       label={field.label}
-      value={value ?? field.defaultValue ?? field.min}
+      value={value ?? field.default ?? field.min}
       min={field.min}
       max={field.max}
       step={field.step}
@@ -125,7 +125,7 @@ export const SelectInput = memo(function SelectInput({
     <Select
       label={field.label}
       options={field.options}
-      value={value ?? field.defaultValue ?? ""}
+      value={value ?? field.default ?? ""}
       helpText={field.helpText}
       onChange={onChange}
     />
@@ -140,7 +140,7 @@ export const TextInput = memo(function TextInput({
   return (
     <TextField
       label={field.label}
-      value={value ?? field.defaultValue ?? ""}
+      value={value ?? field.default ?? ""}
       helpText={field.helpText}
       maxLength={field.maxLength}
       placeholder={field.placeholder}
@@ -159,7 +159,7 @@ export const TextAreaInput = memo(function TextAreaInput({
   return (
     <TextField
       label={field.label}
-      value={value ?? field.defaultValue ?? ""}
+      value={value ?? field.default ?? ""}
       helpText={field.helpText}
       maxLength={field.maxLength}
       placeholder={field.placeholder}

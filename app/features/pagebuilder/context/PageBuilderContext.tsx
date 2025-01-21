@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useCallback } from 'react';
+import React, { createContext, useContext, useCallback, useMemo } from 'react';
 import { useImmer } from 'use-immer';
 import { v4 as uuidv4 } from 'uuid';
 import type { 
@@ -43,11 +43,19 @@ interface PageBuilderContextType extends PageBuilderState {
   endDrag: (result: DropResult) => void;
   
   // Page Operations
+  updatePage: (updates: Partial<PageUI>) => void;
   updatePageContent: (sections: Record<string, Section>, order: string[]) => void;
   updatePageSettings: (settings: Record<string, any>) => void;
   savePage: () => Promise<void>;
   publishPage: () => Promise<void>;
   dismissError: () => void;
+  
+  // CSS Operations
+  updateSectionStyles: (sectionKey: string, styles: string) => void;
+  optimizeCSS: (sectionKey: string, sectionType: string, prompt?: string, currentCSS?: string) => Promise<void>;
+
+  // Registry
+  sectionRegistry: SectionRegistry;
 }
 
 interface PageBuilderProviderProps {
@@ -78,13 +86,22 @@ export function PageBuilderProvider({
   // Section Operations
   const addSection = useCallback((type: string, settings?: Record<string, any>) => {
     updateState(draft => {
-      const sectionKey = `section-${uuidv4()}`;
+      const sectionKey = `section-${type}-${uuidv4()}`;
       const sectionDefinition = sectionRegistry[type];
       
       if (sectionDefinition) {
+        // Initialize settings with defaults from schema
+        const initialSettings: Record<string, any> = {};
+        sectionDefinition.schema.settings.forEach(field => {
+          if (field.default !== undefined) {
+            initialSettings[field.id] = field.default;
+          }
+        });
+        
+        // Add section with settings (provided settings override defaults)
         draft.page.data.sections[sectionKey] = {
           type,
-          settings: settings || {},
+          settings: { ...initialSettings, ...settings },
           blocks: {},
           block_order: []
         };
@@ -111,13 +128,32 @@ export function PageBuilderProvider({
     sectionKey: string, 
     settings: Partial<Section['settings']>
   ) => {
+    console.log('Before update:', {
+      sectionKey,
+      newSettings: settings,
+      currentSettings: state.page.data.sections[sectionKey]?.settings
+    });
+
     updateState(draft => {
       const section = draft.page.data.sections[sectionKey];
       if (section) {
-        Object.assign(section.settings, settings);
+        // Create a new settings object with the current settings
+        const updatedSettings = { ...section.settings };
+        
+        // Update only the changed keys
+        Object.keys(settings).forEach(key => {
+          updatedSettings[key] = settings[key];
+        });
+        
+        // Set the updated settings
+        section.settings = updatedSettings;
       }
     });
-  }, []);
+
+    console.log('After update:', {
+      updatedSettings: state.page.data.sections[sectionKey]?.settings
+    });
+  }, [state.page.data.sections]);
 
   const reorderSections = useCallback((newOrder: string[]) => {
     updateState(draft => {
@@ -151,6 +187,7 @@ export function PageBuilderProvider({
       const section = draft.page.data.sections[sectionKey];
       if (section) {
         delete section.blocks[blockKey];
+        if (!section.block_order) section.block_order = [];
         section.block_order = section.block_order.filter(key => key !== blockKey);
         if (draft.selectedBlockKey === blockKey) {
           draft.selectedBlockKey = undefined;
@@ -167,6 +204,7 @@ export function PageBuilderProvider({
     updateState(draft => {
       const section = draft.page.data.sections[sectionKey];
       if (section) {
+        if (!section.blocks) section.blocks = {};
         const block = section.blocks[blockKey];
         if (block) {
           Object.assign(block.settings, settings);
@@ -221,7 +259,7 @@ export function PageBuilderProvider({
         const section = draft.page.data.sections[result.parentKey];
         if (section) {
           section.block_order = reorderStrings(
-            section.block_order,
+            section.block_order ?? [],
             result.key,
             result.index
           );
@@ -231,6 +269,12 @@ export function PageBuilderProvider({
   }, []);
 
   // Page Operations
+  const updatePage = useCallback((updates: Partial<PageUI>) => {
+    updateState(draft => {
+      Object.assign(draft.page, updates);
+    });
+  }, []);
+
   const updatePageContent = useCallback((sections: Record<string, Section>, order: string[]) => {
     updateState(draft => {
       draft.page.data.sections = sections;
@@ -294,8 +338,59 @@ export function PageBuilderProvider({
     });
   }, []);
 
-  const value: PageBuilderContextType = {
+  const updateSectionStyles = useCallback((sectionKey: string, styles: string) => {
+    updateState(draft => {
+      const section = draft.page.data.sections[sectionKey];
+      if (section) {
+        section.styles = styles;
+      }
+    });
+  }, []);
+
+  const optimizeCSS = useCallback(async (sectionKey: string, sectionType: string, prompt?: string, currentCSS?: string) => {
+    try {
+      console.log('Sending optimize request:', {
+        sectionKey,
+        sectionType,
+        currentCSS: currentCSS || state.page.data.sections[sectionKey]?.styles,
+        settings: state.page.data.sections[sectionKey]?.settings,
+        prompt
+      });
+
+      const response = await fetch('/api/pagebuilder/optimize-css', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sectionKey,
+          sectionType,
+          css: currentCSS || state.page.data.sections[sectionKey]?.styles,
+          settings: state.page.data.sections[sectionKey]?.settings,
+          prompt
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to optimize CSS');
+      }
+      
+      const data = await response.json();
+      console.log('Received optimized CSS:', data);
+      
+      if (!data.optimizedCSS) {
+        throw new Error('No CSS received from optimization');
+      }
+
+      updateSectionStyles(sectionKey, data.optimizedCSS);
+    } catch (error) {
+      console.error('Error optimizing CSS:', error);
+      throw error;
+    }
+  }, [state.page.data.sections]);
+
+  const contextValue = useMemo<PageBuilderContextType>(() => ({
     ...state,
+    sectionRegistry,
     addSection,
     deleteSection,
     updateSectionSettings,
@@ -308,15 +403,41 @@ export function PageBuilderProvider({
     selectBlock,
     startDrag,
     endDrag,
+    updatePage,
     updatePageContent,
     updatePageSettings,
     savePage,
     publishPage,
-    dismissError
-  };
+    dismissError,
+    updateSectionStyles,
+    optimizeCSS
+  }), [
+    state,
+    sectionRegistry,
+    addSection,
+    deleteSection,
+    updateSectionSettings,
+    reorderSections,
+    addBlock,
+    deleteBlock,
+    updateBlockSettings,
+    reorderBlocks,
+    selectSection,
+    selectBlock,
+    startDrag,
+    endDrag,
+    updatePage,
+    updatePageContent,
+    updatePageSettings,
+    savePage,
+    publishPage,
+    dismissError,
+    updateSectionStyles,
+    optimizeCSS
+  ]);
 
   return (
-    <PageBuilderContext.Provider value={value}>
+    <PageBuilderContext.Provider value={contextValue}>
       {children}
     </PageBuilderContext.Provider>
   );

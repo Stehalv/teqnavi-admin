@@ -5,7 +5,7 @@ import { usePageBuilder } from '../../context/PageBuilderContext.js';
 import { Toolbar } from '../Toolbar/Toolbar.js';
 import { SectionList } from '../SectionList/SectionList.js';
 import { SettingsPanel } from '../SettingsPanel/SettingsPanel.js';
-import { PreviewPane } from '~/features/pagebuilder/components/PreviewPane/PreviewPane.js';
+import { PreviewPane } from '../PreviewPane/PreviewPane.js';
 import { Section } from '../Section/Section.js';
 import { Block } from '../Block/Block.js';
 import styles from './PageBuilder.module.css';
@@ -138,7 +138,10 @@ export function PageBuilder() {
             </div>
             
             <div className={styles.settings}>
-              <SettingsPanel />
+              <SettingsPanel
+                selectedSectionKey={selectedSectionKey || null}
+                section={selectedSectionKey ? page.data.sections[selectedSectionKey] : null}
+              />
             </div>
           </div>
 

@@ -43,7 +43,7 @@ export function FontPickerInput({ field, value, onChange }: InputProps<FontPicke
     <Select
       label={field.label}
       options={fonts}
-      value={value ?? field.defaultValue ?? fonts[0].value}
+      value={value ?? field.default ?? fonts[0].value}
       helpText={field.helpText}
       onChange={onChange}
     />
@@ -154,7 +154,7 @@ export function LiquidInput({ field, value, onChange }: InputProps<LiquidField>)
   return (
     <TextField
       label={field.label}
-      value={value ?? field.defaultValue ?? ""}
+      value={value ?? field.default ?? ""}
       onChange={onChange}
       multiline={4}
       monospaced

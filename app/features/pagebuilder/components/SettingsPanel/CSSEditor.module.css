@@ -1,0 +1,72 @@
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.draggableModal {
+  position: absolute;
+  min-width: 600px;
+  background-color: var(--p-surface);
+  border-radius: var(--p-border-radius-2);
+  box-shadow: var(--p-shadow-500);
+  user-select: none;
+  pointer-events: all;
+  border: 1px solid var(--p-border-subdued);
+  background: white;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--p-space-400);
+  background-color: var(--p-surface);
+  border-top-left-radius: var(--p-border-radius-2);
+  border-top-right-radius: var(--p-border-radius-2);
+  border-bottom: 1px solid var(--p-border-subdued);
+  cursor: grab;
+}
+
+.headerContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--p-space-100);
+}
+
+.modalHeader:active {
+  cursor: grabbing;
+}
+
+.editorContainer {
+  padding: var(--p-space-400);
+  border-bottom-left-radius: var(--p-border-radius-2);
+  border-bottom-right-radius: var(--p-border-radius-2);
+  overflow: hidden;
+  background: white;
+}
+
+.editorContainer :global(.monaco-editor) {
+  border-radius: var(--p-border-radius-1);
+  overflow: hidden;
+  border: 1px solid var(--p-border-subdued);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--p-space-200);
+}
+
+.headerActions :global(.Polaris-TextField) {
+  width: 300px;
+  margin-top: 0;
+}
+
+.headerActions :global(.Polaris-TextField__Input) {
+  height: 36px;
+} 

@@ -6,11 +6,11 @@ export interface HSBAColor {
 }
 
 export interface BaseSettingField {
-  key: string;
+  id: string;
   label: string;
   helpText?: string;
   required?: boolean;
-  defaultValue?: any;
+  default?: any;
 }
 
 // Basic Inputs

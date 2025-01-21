@@ -30,24 +30,43 @@ export class PageService {
     };
   }
 
-  private static generateHandle(title: string): string {
-    return title
+  static async generateUniqueHandle(shopId: string, title: string): Promise<string> {
+    const baseHandle = title
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
+
+    let handle = baseHandle;
+    let counter = 1;
+
+    while (true) {
+      const existing = await prisma.page.findFirst({
+        where: { 
+          shopId, 
+          handle 
+        }
+      });
+
+      if (!existing) return handle;
+      handle = `${baseHandle}-${counter}`;
+      counter++;
+    }
   }
 
   static async createPage(shopId: string, pageData: Partial<Page>): Promise<Page> {
     const defaultJson: ShopifyPageJSON = {
       sections: {},
-      order: []
+      order: [],
+      settings: {}
     };
+
+    const handle = pageData.handle || await this.generateUniqueHandle(shopId, pageData.title || "Untitled Page");
 
     const dbPage = await prisma.page.create({
       data: {
         shopId,
         title: pageData.title || "Untitled Page",
-        handle: pageData.handle || this.generateHandle(pageData.title || "Untitled Page"),
+        handle,
         data: JSON.stringify(pageData.data || defaultJson),
         isPublished: pageData.isPublished || false
       }

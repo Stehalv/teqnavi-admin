@@ -1,235 +1,277 @@
-import React, { useState, useCallback } from "react";
-import { Frame, Loading, Banner, Toast, Page } from "@shopify/polaris";
-import { PageBuilder } from "~/features/pagebuilder/components/PageBuilder/PageBuilder.js";
-import { PageBuilderProvider } from "~/features/pagebuilder/context/PageBuilderContext.js";
-import type { PageUI } from "~/features/pagebuilder/types/shopify.js";
-import type { SectionRegistry } from "~/features/pagebuilder/types/templates.js";
-import type { TextField, CollectionField, RichTextField } from "~/features/pagebuilder/types/settings.js";
+import { json } from '@remix-run/node';
+import type { LoaderFunctionArgs } from '@remix-run/node';
+import { useLoaderData, useNavigate, Link } from '@remix-run/react';
+import { useState, useCallback } from 'react';
+import { 
+  Page, 
+  LegacyCard, 
+  EmptyState,
+  IndexTable,
+  Text,
+  useIndexResourceState,
+  Badge,
+  Button,
+  Modal,
+  ButtonGroup,
+  Toast,
+  type ActionListItemDescriptor
+} from '@shopify/polaris';
+import { DeleteIcon } from '@shopify/polaris-icons';
+import { validateShopAccess } from '~/middleware/auth.server.js';
+import { AIModal } from '~/features/pagebuilder/components/AIModal/AIModal.js';
+import { prisma } from '~/db.server.js';
 
-interface SaveError {
-  message: string;
-  details?: string;
+export async function loader({ request }: LoaderFunctionArgs) {
+  try {
+    const { shopId } = await validateShopAccess(request);
+    const dbPages = await prisma.page.findMany({
+      where: { shopId, deletedAt: null },
+      orderBy: { updatedAt: 'desc' }
+    });
+
+    const pages = dbPages.map(page => ({
+      ...page,
+      data: JSON.parse(page.data),
+      createdAt: new Date(page.createdAt),
+      updatedAt: new Date(page.updatedAt),
+      publishedAt: page.publishedAt ? new Date(page.publishedAt) : null,
+      deletedAt: page.deletedAt ? new Date(page.deletedAt) : null
+    }));
+
+    return json({ pages });
+  } catch (error) {
+    console.error('Error loading pages:', error);
+    throw new Response(error instanceof Error ? error.message : 'Failed to load pages', {
+      status: 500
+    });
+  }
 }
 
 export default function PageBuilderIndex() {
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveError, setSaveError] = useState<SaveError | null>(null);
-  const [showSaveToast, setShowSaveToast] = useState(false);
+  const { pages } = useLoaderData<typeof loader>();
+  const navigate = useNavigate();
+  const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+  const [pageToDelete, setPageToDelete] = useState<string | null>(null);
+  const [pagesToDelete, setPagesToDelete] = useState<string[]>([]);
+  const [toastContent, setToastContent] = useState<{ message: string; error?: boolean } | null>(null);
 
-  const handleSave = useCallback(async (page: PageUI) => {
-    setIsSaving(true);
-    setSaveError(null);
+  const { selectedResources, allResourcesSelected, handleSelectionChange } = 
+    useIndexResourceState(pages);
 
+  const handleDeleteSelectedPages = useCallback(async () => {
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setShowSaveToast(true);
+      const deletePromises = selectedResources.map(pageId => 
+        fetch(`/api/pagebuilder/pages/${pageId}`, {
+          method: 'DELETE'
+        })
+      );
+
+      const results = await Promise.all(deletePromises);
+      const hasErrors = results.some(response => !response.ok);
+
+      if (hasErrors) {
+        throw new Error('Failed to delete some pages');
+      }
+
+      setToastContent({ message: 'Selected pages deleted successfully' });
+      window.location.reload();
     } catch (error) {
-      setSaveError({
-        message: 'Failed to save page',
-        details: error instanceof Error ? error.message : 'Unknown error occurred'
+      console.error('Error deleting pages:', error);
+      setToastContent({ 
+        message: error instanceof Error ? error.message : 'Failed to delete pages', 
+        error: true 
       });
-    } finally {
-      setIsSaving(false);
+    }
+  }, [selectedResources]);
+
+  const handleDeletePage = useCallback(async (pageId: string) => {
+    try {
+      const response = await fetch(`/api/pagebuilder/pages/${pageId}`, {
+        method: 'DELETE'
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete page');
+      }
+
+      setToastContent({ message: 'Page deleted successfully' });
+      // Refresh the page to update the list
+      window.location.reload();
+    } catch (error) {
+      console.error('Error deleting page:', error);
+      setToastContent({ 
+        message: error instanceof Error ? error.message : 'Failed to delete page', 
+        error: true 
+      });
     }
   }, []);
 
-  const initialPage: PageUI = {
-    id: '1',
-    shopId: '12345',
-    title: 'Example Page',
-    handle: 'example-page',
-    isPublished: false,
-    data: {
-      sections: {
-        'hero-section': {
-          type: 'hero',
-          settings: {
-            heading: 'Welcome to our store',
-            subheading: 'Shop the latest trends',
-            button_text: 'Shop Now',
-            button_link: '/collections/all',
-            background_type: 'color',
-            background_value: '#000000',
-            text_color: '#ffffff',
-            text_alignment: 'center',
-            content_width: 'medium',
-            min_height: 500,
-            overlay_opacity: 0.5
-          },
-          blocks: {},
-          block_order: []
-        },
-        'featured-collection': {
-          type: 'featured-collection',
-          settings: {
-            title: 'Featured Products',
-            collection_id: '1234',
-            products_to_show: 4,
-            columns_desktop: 4,
-            columns_mobile: 2,
-            show_view_all: true,
-            view_all_style: 'button',
-            enable_quick_add: true,
-            show_vendor: true,
-            show_rating: true,
-            show_secondary_image: false,
-            enable_filtering: false,
-            enable_sorting: false
-          },
-          blocks: {},
-          block_order: []
-        },
-        'rich-text': {
-          type: 'rich-text',
-          settings: {
-            content: 'Our Story\n\nWelcome to our store! We offer the best products at great prices.',
-            text_alignment: 'left',
-            narrow_content: true,
-            enable_custom_text_color: true,
-            text_color: '#202223',
-            background_type: 'none'
-          },
-          blocks: {},
-          block_order: []
-        }
-      },
-      order: ['hero-section', 'featured-collection', 'rich-text']
-    },
-    settings: {
-      seo: {
-        title: 'Example Page',
-        description: 'Welcome to our store',
-        url_handle: 'example-page'
-      }
-    },
-    createdAt: new Date(),
-    updatedAt: new Date()
-  };
+  const emptyStateMarkup = (
+    <EmptyState
+      heading="Create pages for your online store"
+      action={{
+        content: 'Generate with AI',
+        onAction: () => setIsAIModalOpen(true)
+      }}
+      image="https://cdn.shopify.com/s/files/1/2376/3301/products/empty-state.png"
+    >
+      <p>Use AI to generate beautiful pages with sections and content.</p>
+    </EmptyState>
+  );
 
-  const sectionRegistry: SectionRegistry = {
-    hero: {
-      type: 'hero',
-      name: 'Hero Banner',
-      schema: {
-        settings: [
-          {
-            type: 'text',
-            key: 'heading',
-            label: 'Heading',
-            defaultValue: 'Welcome'
-          } as TextField,
-          {
-            type: 'text',
-            key: 'subheading',
-            label: 'Subheading',
-            defaultValue: 'Shop the latest trends'
-          } as TextField
-        ]
-      },
-      liquid: `
-        <div class="hero-banner" style="background-color: {{ section.settings.background_value }}">
-          <div class="hero-content">
-            <h1>{{ section.settings.heading }}</h1>
-            <p>{{ section.settings.subheading }}</p>
-            {% if section.settings.button_text != blank %}
-              <a href="{{ section.settings.button_link }}" class="button">
-                {{ section.settings.button_text }}
-              </a>
-            {% endif %}
-          </div>
+  const rowMarkup = pages.map((page, index) => (
+    <IndexTable.Row
+      id={page.id}
+      key={page.id}
+      position={index}
+      selected={selectedResources.includes(page.id)}
+      onClick={() => navigate(`/app/pagebuilder/${page.id}`)}
+    >
+      <IndexTable.Cell>
+        <Text variant="bodyMd" fontWeight="bold" as="span">
+          {page.title}
+        </Text>
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        {page.isPublished ? (
+          <Badge tone="success">Published</Badge>
+        ) : (
+          <Badge tone="attention">Draft</Badge>
+        )}
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        {new Date(page.updatedAt).toLocaleDateString()}
+      </IndexTable.Cell>
+      <IndexTable.Cell>
+        <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+          <Button
+            icon={DeleteIcon}
+            tone="critical"
+            onClick={() => setPageToDelete(page.id)}
+            accessibilityLabel={`Delete ${page.title}`}
+          />
         </div>
-      `
-    },
-    'featured-collection': {
-      type: 'featured-collection',
-      name: 'Featured Collection',
-      schema: {
-        settings: [
-          {
-            type: 'text',
-            key: 'title',
-            label: 'Title',
-            defaultValue: 'Featured Products'
-          } as TextField,
-          {
-            type: 'collection',
-            key: 'collection_id',
-            label: 'Collection'
-          } as CollectionField
-        ]
-      },
-      liquid: `
-        <div class="featured-collection">
-          <h2>{{ section.settings.title }}</h2>
-          {% assign collection = collections[section.settings.collection_id] %}
-          {% if collection != blank %}
-            <div class="product-grid">
-              {% for product in collection.products limit: section.settings.products_to_show %}
-                <div class="product-card">
-                  <img src="{{ product.featured_image | img_url: 'medium' }}" alt="{{ product.title }}">
-                  <h3>{{ product.title }}</h3>
-                  <p>{{ product.price | money }}</p>
-                </div>
-              {% endfor %}
-            </div>
-          {% endif %}
-        </div>
-      `
-    },
-    'rich-text': {
-      type: 'rich-text',
-      name: 'Rich Text',
-      schema: {
-        settings: [
-          {
-            type: 'richtext',
-            key: 'content',
-            label: 'Content',
-            defaultValue: 'Welcome to our store'
-          } as RichTextField
-        ]
-      },
-      liquid: `
-        <div class="rich-text">
-          <div class="rich-text__content">
-            {{ section.settings.content }}
-          </div>
-        </div>
-      `
-    }
-  };
+      </IndexTable.Cell>
+    </IndexTable.Row>
+  ));
+
+  const bulkActions: ActionListItemDescriptor[] = selectedResources.length > 0
+    ? [
+        {
+          content: `Delete Selected (${selectedResources.length})`,
+          onAction: () => setPagesToDelete(selectedResources)
+        }
+      ]
+    : [];
 
   return (
-    <Frame>
-      {isSaving && <Loading />}
-      
-      {saveError && (
-        <Banner
-          title={saveError.message}
-          tone="critical"
-          onDismiss={() => setSaveError(null)}
-        >
-          {saveError.details && <p>{saveError.details}</p>}
-        </Banner>
+    <Page
+      title="Pages"
+      primaryAction={{
+        content: 'Generate with AI',
+        onAction: () => setIsAIModalOpen(true)
+      }}
+      secondaryActions={
+        selectedResources.length > 0 
+          ? [{
+              content: `Delete Selected (${selectedResources.length})`,
+              onAction: () => setPagesToDelete(selectedResources)
+            }]
+          : undefined
+      }
+    >
+      {pages.length === 0 ? (
+        emptyStateMarkup
+      ) : (
+        <LegacyCard>
+          <IndexTable
+            resourceName={{ singular: 'page', plural: 'pages' }}
+            itemCount={pages.length}
+            selectedItemsCount={
+              allResourcesSelected ? 'All' : selectedResources.length
+            }
+            onSelectionChange={handleSelectionChange}
+            headings={[
+              { title: 'Title' },
+              { title: 'Status' },
+              { title: 'Last Updated' },
+              { title: 'Actions' }
+            ]}
+            selectable
+            bulkActions={bulkActions}
+          >
+            {rowMarkup}
+          </IndexTable>
+        </LegacyCard>
       )}
 
-      {showSaveToast && (
+      <AIModal
+        open={isAIModalOpen}
+        onClose={() => setIsAIModalOpen(false)}
+        description="Describe the page you want to create and our AI will generate it for you."
+        placeholder="e.g. Create a modern homepage with a hero section, featured products, and newsletter signup"
+        generateButtonText="Generate Page"
+      />
+
+      <Modal
+        open={pageToDelete !== null}
+        onClose={() => setPageToDelete(null)}
+        title="Delete Page"
+        primaryAction={{
+          content: 'Delete',
+          destructive: true,
+          onAction: () => {
+            if (pageToDelete) {
+              handleDeletePage(pageToDelete);
+              setPageToDelete(null);
+            }
+          }
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: () => setPageToDelete(null)
+          }
+        ]}
+      >
+        <Modal.Section>
+          <p>Are you sure you want to delete this page? This action cannot be undone.</p>
+        </Modal.Section>
+      </Modal>
+
+      <Modal
+        open={pagesToDelete.length > 0}
+        onClose={() => setPagesToDelete([])}
+        title="Delete Selected Pages"
+        primaryAction={{
+          content: 'Delete',
+          destructive: true,
+          onAction: () => {
+            handleDeleteSelectedPages();
+            setPagesToDelete([]);
+          }
+        }}
+        secondaryActions={[
+          {
+            content: 'Cancel',
+            onAction: () => setPagesToDelete([])
+          }
+        ]}
+      >
+        <Modal.Section>
+          <p>Are you sure you want to delete {pagesToDelete.length} selected pages? This action cannot be undone.</p>
+        </Modal.Section>
+      </Modal>
+
+      {toastContent && (
         <Toast
-          content="Page saved successfully"
-          onDismiss={() => setShowSaveToast(false)}
+          content={toastContent.message}
+          error={toastContent.error}
+          onDismiss={() => setToastContent(null)}
         />
       )}
-
-      <Page fullWidth>
-        <PageBuilderProvider
-          initialPage={initialPage}
-          sectionRegistry={sectionRegistry}
-          onSave={handleSave}
-        >
-          <PageBuilder />
-        </PageBuilderProvider>
-      </Page>
-    </Frame>
+    </Page>
   );
 } 

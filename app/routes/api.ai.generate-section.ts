@@ -1,6 +1,7 @@
 import { json } from "@remix-run/node";
 import { PageBuilderAI } from "~/features/pagebuilder/services/pagebuilder-ai.server.js";
 import { validateShopAccess } from "~/middleware/auth.server.js";
+import { TemplateService } from "~/features/pagebuilder/services/template.server.js";
 
 export async function action({ request }: { request: Request }) {
   const { shopId } = await validateShopAccess(request);
@@ -11,7 +12,14 @@ export async function action({ request }: { request: Request }) {
 
   try {
     const { prompt, type } = await request.json();
-    const result = await PageBuilderAI.generateSection(shopId, prompt, type);
+    
+    if (!type) {
+      return json({ error: "Section type is required" }, { status: 400 });
+    }
+
+    const result = await PageBuilderAI.generateSection(type);
+    await TemplateService.saveAIGeneratedTemplate(shopId, type, result);
+    
     return json({ success: true, data: result });
   } catch (error) {
     console.error('Error generating section:', error);

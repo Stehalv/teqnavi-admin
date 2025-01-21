@@ -1,28 +1,31 @@
-import type { SettingField } from './settings.js';
+import type { SectionCapabilities, SettingField, BlockTemplate } from './shopify.js';
+
+export interface BlockSchema {
+  type: string;
+  name: string;
+  settings: SettingField[];
+}
 
 export interface TemplateSchema {
+  name: string;
   settings: SettingField[];
-  blocks?: {
-    type: string;
-    name: string;
-    settings: SettingField[];
-  }[];
-  max_blocks?: number;
-  presets?: {
-    name: string;
-    settings: Record<string, any>;
-    blocks?: Array<{
-      type: string;
-      settings: Record<string, any>;
-    }>;
-  }[];
+  blocks?: Record<string, BlockTemplate>;
+  capabilities: SectionCapabilities;
 }
 
 export interface SectionDefinition {
+  name: string;
   type: string;
+  schema: TemplateSchema;
+  liquid: string;
+  styles?: string;
+}
+
+export interface SectionLiquidTemplate {
   name: string;
   schema: TemplateSchema;
   liquid: string;
+  styles: string;
   blocks?: {
     [type: string]: {
       name: string;
@@ -33,6 +36,4 @@ export interface SectionDefinition {
 }
 
 // Registry of available section types
-export interface SectionRegistry {
-  [type: string]: SectionDefinition;
-} 
+export type SectionRegistry = Record<string, SectionDefinition>; 

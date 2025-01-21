@@ -44,6 +44,12 @@ export interface BlockTemplate {
   limit?: number;
 }
 
+// Section Capabilities
+export interface SectionCapabilities {
+  supportsBlocks: boolean;
+  maxBlocks?: number;
+}
+
 // Shopify Section Template
 export interface SectionTemplate {
   name: string;
@@ -51,6 +57,7 @@ export interface SectionTemplate {
   settings: SettingField[];
   blocks?: BlockTemplate[];
   max_blocks?: number;
+  capabilities: SectionCapabilities;
   presets?: Array<{
     name: string;
     settings: Record<string, any>;
@@ -72,14 +79,21 @@ export interface Block {
 export interface Section {
   type: string;
   settings: Record<string, any>;
-  blocks: Record<string, Block>;
-  block_order: string[];
+  blocks?: Record<string, Block>;
+  block_order?: string[];
+  styles?: string;
+}
+
+// Type guard for sections with blocks
+export function isSectionWithBlocks(section: Section): section is Section & { blocks: Record<string, Block>; block_order: string[] } {
+  return 'blocks' in section && 'block_order' in section;
 }
 
 // Shopify Page JSON Structure
 export interface ShopifyPageJSON {
   name?: string;
   sections: Record<string, Section>;
+  settings: Record<string, any>;
   order: string[];
 }
 

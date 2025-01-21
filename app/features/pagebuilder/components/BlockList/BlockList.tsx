@@ -3,8 +3,7 @@ import { Card, ButtonGroup, Button, Text, InlineStack, Spinner } from '@shopify/
 import { usePageBuilder } from '../../context/PageBuilderContext.js';
 import { Block } from '../Block/Block.js';
 import { AIModal } from '../AIModal/AIModal.js';
-import { generateBlock } from '../../services/ai.js';
-import type { BlockType, Block as BlockInterface } from '../../types.js';
+import type { BlockType, Block as BlockInterface } from '../../types/shopify.js';
 import styles from './BlockList.module.css';
 
 const COMMON_BLOCK_TYPES: BlockType[] = ['text', 'image', 'button'];
@@ -41,22 +40,30 @@ export const BlockList = memo(function BlockList({
 
   const handleGenerateBlock = useCallback(async (prompt: string) => {
     if (!selectedBlockType) return;
+    
+    const response = await fetch('/api/ai/generate-section', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        type: selectedBlockType,
+        prompt
+      })
+    });
 
-    setIsLoading(true);
-    try {
-      const response = await generateBlock(prompt, sectionType, selectedBlockType);
-      if (!response.success || !response.data) {
-        throw new Error(response.error || 'Failed to generate block');
-      }
-      
-      addBlock(sectionId, selectedBlockType);
-    } catch (error) {
-      console.error('Error generating block:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to generate block');
     }
-  }, [selectedBlockType, sectionId, sectionType, addBlock]);
+
+    const { data } = await response.json();
+    // Handle the generated block data
+    if (data) {
+      // Add the generated block to the section
+      addBlock(sectionId, selectedBlockType);
+    }
+  }, [selectedBlockType, sectionId, addBlock]);
 
   const availableBlockTypes = [
     ...COMMON_BLOCK_TYPES,
@@ -101,9 +108,10 @@ export const BlockList = memo(function BlockList({
           {blockOrder.map((blockId) => (
             <Block
               key={blockId}
-              block={{ ...blocks[blockId], parentId: sectionId }}
+              block={blocks[blockId]}
+              blockKey={blockId}
+              parentKey={sectionId}
               isSelected={blockId === selectedBlockId}
-              parentId={sectionId}
             />
           ))}
         </div>

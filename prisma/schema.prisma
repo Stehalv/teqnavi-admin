@@ -69,7 +69,10 @@ model SectionTemplate {
   type        String        
   schema      String        @db.Text  // JSON schema for section settings
   liquid      String        @db.Text  // Liquid template code
+  styles      String        @db.Text  // CSS styles for the section
+  settings    String        @db.Text @default("{}")  // Instance-specific settings and liquid
   blocks      BlockTemplate[]
+  snippets    SectionTemplateSnippet[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -92,4 +95,31 @@ model BlockTemplate {
 
   @@unique([sectionTemplateId, type])
   @@map("block_templates")
+}
+
+model Snippet {
+  id          String    @id @default(cuid())
+  shopId      String    
+  key         String    // The key used in {% render 'key' %}
+  name        String    // Display name for UI
+  description String?   // Optional description
+  liquid      String    @db.Text
+  isGlobal    Boolean   @default(false)  // Whether snippet is available to all shops
+  sections    SectionTemplateSnippet[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([shopId, key])
+  @@index([shopId])
+  @@index([key]) // For quick lookups during rendering
+  @@map("snippets")
+}
+
+model SectionTemplateSnippet {
+  sectionTemplateId  String
+  snippetId         String
+  sectionTemplate   SectionTemplate  @relation(fields: [sectionTemplateId], references: [id], onDelete: Cascade)
+  snippet           Snippet         @relation(fields: [snippetId], references: [id], onDelete: Cascade)
+  @@id([sectionTemplateId, snippetId])
+  @@map("section_template_snippets")
 }

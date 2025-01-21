@@ -1,4 +1,4 @@
-import React, { memo, useCallback, useState } from 'react';
+import React, { memo, useCallback, useState, useRef } from 'react';
 import {
   DropZone,
   Button,
@@ -33,6 +33,14 @@ export const ImagePickerInput = memo(function ImagePickerInput({
 }: MediaInputProps<ImagePickerField>) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string>();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files && files.length > 0) {
+      handleDrop([files[0]]);
+    }
+  }, []);
 
   const handleDrop = useCallback(async (files: File[]) => {
     const file = files[0];
@@ -73,8 +81,20 @@ export const ImagePickerInput = memo(function ImagePickerInput({
     setError(undefined);
   }, [onChange]);
 
+  const handleReplace = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
   return (
     <BlockStack gap="200">
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept={field.allowedTypes?.join(', ') || 'image/*'}
+        style={{ display: 'none' }}
+      />
+
       <Text as="span" variant="bodyMd">
         {field.label}
         {field.required && <span className={styles.required}>*</span>}
@@ -85,38 +105,33 @@ export const ImagePickerInput = memo(function ImagePickerInput({
           <p>{error}</p>
         </Banner>
       )}
-
+      
       {value ? (
-        <BlockStack gap="200">
-          <img
-            src={value}
-            alt={field.label}
-            style={field.aspectRatio ? { aspectRatio: String(field.aspectRatio) } : undefined}
-          />
+        <div className={styles.preview}>
+          <img src={value} alt={field.label} style={field.aspectRatio ? { aspectRatio: String(field.aspectRatio) } : undefined} />
           <InlineStack gap="200">
-            <Button onClick={() => document.getElementById(`dropzone-${field.key}`)?.click()}>
+            <Button onClick={handleReplace}>
               Replace Image
             </Button>
-            <Button tone="critical" onClick={handleRemove}>
+            <Button tone="critical" variant="plain" onClick={handleRemove}>
               Remove
             </Button>
           </InlineStack>
-        </BlockStack>
+        </div>
       ) : (
         <DropZone
-          id={`dropzone-${field.key}`}
-          accept={field.allowedTypes?.join(', ') || 'image/*'}
           onDrop={handleDrop}
           allowMultiple={false}
           overlayText="Drop image to upload"
           errorOverlayText="File type not accepted"
           type="image"
+          onClick={handleReplace}
         >
           {isLoading ? (
-            <BlockStack gap="200" align="center">
+            <div className={styles.loadingOverlay}>
               <Spinner size="large" />
               <Text as="span">Uploading...</Text>
-            </BlockStack>
+            </div>
           ) : null}
         </DropZone>
       )}
@@ -198,7 +213,7 @@ export const VideoInput = memo(function VideoInput({
             style={{ width: '100%', maxWidth: '600px' }}
           />
           <InlineStack gap="200">
-            <Button onClick={() => document.getElementById(`dropzone-${field.key}`)?.click()}>
+            <Button onClick={() => document.getElementById(`dropzone-${field.id}`)?.click()}>
               Replace Video
             </Button>
             <Button tone="critical" onClick={handleRemove}>
@@ -208,7 +223,7 @@ export const VideoInput = memo(function VideoInput({
         </BlockStack>
       ) : (
         <DropZone
-          id={`dropzone-${field.key}`}
+          id={`dropzone-${field.id}`}
           accept={field.allowedTypes?.join(', ') || 'video/*'}
           onDrop={handleDrop}
           allowMultiple={false}
