@@ -48,6 +48,7 @@ export const Block = memo(function Block({
 
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('Block clicked:', blockKey);
     selectBlock(blockKey);
   }, [blockKey, selectBlock]);
 

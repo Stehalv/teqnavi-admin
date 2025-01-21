@@ -1,0 +1,38 @@
+.modalContent {
+  height: calc(90vh - 10rem);
+}
+
+.editorContainer {
+  height: 95%;
+}
+
+.editorContent {
+  height: 100%;
+}
+
+:global(.Polaris-Modal-Dialog) {
+  width: 80% !important;
+  height: 90vh !important;
+  margin: 0 auto !important;
+}
+
+:global(.Polaris-Modal-Dialog__Container) {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+:global(.Polaris-Modal-Dialog__Modal) {
+  height: 100% !important;
+  width: 100% !important;
+  max-width: none !important;
+}
+
+:global(.Polaris-Modal__Content) {
+  height: calc(100% - 10rem) !important;
+  overflow: hidden !important;
+}
+
+:global(.Polaris-Modal-Section) {
+  height: 100%;
+  padding: 0 !important;
+} 

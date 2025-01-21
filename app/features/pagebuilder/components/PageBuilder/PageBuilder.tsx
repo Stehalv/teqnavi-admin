@@ -141,6 +141,7 @@ export function PageBuilder() {
               <SettingsPanel
                 selectedSectionKey={selectedSectionKey || null}
                 section={selectedSectionKey ? page.data.sections[selectedSectionKey] : null}
+                selectedBlockKey={selectedBlockKey || null}
               />
             </div>
           </div>

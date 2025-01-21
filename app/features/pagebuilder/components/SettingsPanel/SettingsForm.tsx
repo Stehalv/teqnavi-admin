@@ -92,6 +92,7 @@ interface SettingsFormProps {
     settings: Record<string, any>;
   };
   schema: SettingField[];
+  blockKey?: string;
 }
 
 const SettingFieldRenderer = memo(function SettingFieldRenderer({
@@ -195,55 +196,18 @@ const SettingFieldRenderer = memo(function SettingFieldRenderer({
   }
 });
 
-export function SettingsForm({ sectionKey, section, schema }: SettingsFormProps) {
-  const { updateSectionSettings } = usePageBuilder();
+export function SettingsForm({ sectionKey, section, schema, blockKey }: SettingsFormProps) {
+  const { updateSectionSettings, updateBlockSettings } = usePageBuilder();
 
   const handleSettingChange = useCallback((id: string, value: any) => {
-    try {
-      // Find the field schema to validate the value
-      const fieldSchema = schema.find(field => field.id === id);
-      if (!fieldSchema) {
-        console.warn(`No schema found for field: ${id}`);
-        return;
-      }
-
-      // Validate value based on field type
-      let validatedValue = value;
-      switch (fieldSchema.type) {
-        case 'number':
-        case 'range':
-          validatedValue = Number(value);
-          if (isNaN(validatedValue)) {
-            console.error(`Invalid number value for field: ${id}`);
-            return;
-          }
-          if (fieldSchema.min !== undefined && validatedValue < fieldSchema.min) {
-            validatedValue = fieldSchema.min;
-          }
-          if (fieldSchema.max !== undefined && validatedValue > fieldSchema.max) {
-            validatedValue = fieldSchema.max;
-          }
-          break;
-        case 'checkbox':
-          validatedValue = Boolean(value);
-          break;
-        case 'select':
-          if (fieldSchema.options && !fieldSchema.options.find(opt => opt.value === value)) {
-            console.error(`Invalid select value for field: ${id}`);
-            return;
-          }
-          break;
-      }
-
-      // Only update if value has changed
-      if (section.settings[id] !== validatedValue) {
-        console.log('Updating setting:', { id, value: validatedValue, currentSettings: section.settings });
-        updateSectionSettings(sectionKey, { [id]: validatedValue });
-      }
-    } catch (error) {
-      console.error('Error updating setting:', error);
+    if (blockKey) {
+      // Update block settings
+      updateBlockSettings(sectionKey, blockKey, { [id]: value });
+    } else {
+      // Update section settings
+      updateSectionSettings(sectionKey, { [id]: value });
     }
-  }, [sectionKey, section.settings, schema, updateSectionSettings]);
+  }, [sectionKey, blockKey, updateSectionSettings, updateBlockSettings]);
 
   // Memoize the field renderers to prevent unnecessary re-renders
   const fieldRenderers = useMemo(() => {
@@ -272,7 +236,7 @@ export function SettingsForm({ sectionKey, section, schema }: SettingsFormProps)
   if (!fieldRenderers) {
     return (
       <BlockStack gap="400">
-        <Text as="p">No schema fields defined for this section</Text>
+        <Text as="p">No schema fields defined for this {blockKey ? 'block' : 'section'}</Text>
       </BlockStack>
     );
   }

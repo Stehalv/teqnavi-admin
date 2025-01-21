@@ -7,10 +7,19 @@ export interface BlockSchema {
 }
 
 export interface TemplateSchema {
-  name: string;
+  name?: string;
   settings: SettingField[];
-  blocks?: Record<string, BlockTemplate>;
-  capabilities: SectionCapabilities;
+  blocks?: BlockTemplate[];
+  max_blocks?: number;
+  capabilities?: SectionCapabilities;
+  presets?: Array<{
+    name: string;
+    settings: Record<string, any>;
+    blocks?: Array<{
+      type: string;
+      settings: Record<string, any>;
+    }>;
+  }>;
 }
 
 export interface SectionDefinition {
@@ -19,6 +28,15 @@ export interface SectionDefinition {
   schema: TemplateSchema;
   liquid: string;
   styles?: string;
+  settings?: Record<string, any>;
+  presets?: Array<{
+    name: string;
+    settings: Record<string, any>;
+    blocks?: Array<{
+      type: string;
+      settings: Record<string, any>;
+    }>;
+  }>;
 }
 
 export interface SectionLiquidTemplate {

@@ -137,10 +137,14 @@ export const TextInput = memo(function TextInput({
   value,
   onChange
 }: InputProps<TextFieldType>) {
+  // Convert undefined/null values to empty string
+  const safeValue = value === undefined || value === null ? '' : String(value);
+  const defaultValue = field.default === undefined || field.default === null ? '' : String(field.default);
+
   return (
     <TextField
       label={field.label}
-      value={value ?? field.default ?? ""}
+      value={safeValue || defaultValue}
       helpText={field.helpText}
       maxLength={field.maxLength}
       placeholder={field.placeholder}
@@ -156,10 +160,14 @@ export const TextAreaInput = memo(function TextAreaInput({
   value,
   onChange
 }: InputProps<TextAreaField>) {
+  // Convert undefined/null values to empty string
+  const safeValue = value === undefined || value === null ? '' : String(value);
+  const defaultValue = field.default === undefined || field.default === null ? '' : String(field.default);
+
   return (
     <TextField
       label={field.label}
-      value={value ?? field.default ?? ""}
+      value={safeValue || defaultValue}
       helpText={field.helpText}
       maxLength={field.maxLength}
       placeholder={field.placeholder}

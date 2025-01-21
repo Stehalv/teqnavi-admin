@@ -30,8 +30,16 @@ export class RendererService {
             email: 'test@example.com',
             domain: 'test.myshopify.com'
           }
-        }
+        },
+        settings: {},
+        section: {}
       }
+    });
+
+    // Add a debug filter to help troubleshoot variable access
+    engine.registerFilter('debug', (value: any) => {
+      console.log('Debug value:', value);
+      return value;
     });
 
     // Register common Shopify filters
@@ -77,6 +85,37 @@ export class RendererService {
     return engine;
   }
 
+  private static transformSettings(settings: Record<string, any>): Record<string, any> {
+    const result = { ...settings };
+    
+    // Handle typography settings
+    if (settings.typography) {
+      const { typography } = settings;
+      delete result.typography;
+
+      // Handle general typography properties
+      if (typography.color) result.text_color = typography.color;
+      if (typography.size) result.text_size = typography.size;
+      if (typography.weight) result.text_weight = typography.weight;
+
+      // Handle element-specific properties (keep their prefixes)
+      if (typography.heading_size) result.heading_size = typography.heading_size;
+      if (typography.price_size) result.price_size = typography.price_size;
+      if (typography.title_font_size) result.title_font_size = typography.title_font_size;
+      if (typography.price_font_size) result.price_font_size = typography.price_font_size;
+    }
+
+    // Handle other nested settings by flattening them
+    for (const [key, value] of Object.entries(result)) {
+      if (value && typeof value === 'object' && !Array.isArray(value) && key !== 'typography') {
+        Object.assign(result, value);
+        delete result[key];
+      }
+    }
+    
+    return result;
+  }
+
   static async renderSection(shopId: string, section: Section, sectionKey: string): Promise<string> {
     console.log('Rendering section:', {
       type: section.type,
@@ -102,41 +141,50 @@ export class RendererService {
       hasLiquid: !!template.liquid
     });
 
+    // Transform blocks into the format expected by the template
+    const transformedBlocks: any[] = [];
+    
+    if (section.blocks && section.block_order) {
+      for (const blockKey of section.block_order) {
+        const block = section.blocks[blockKey];
+        if (block) {
+          // Add block data directly to the array
+          transformedBlocks.push({
+            type: block.type,
+            settings: this.transformSettings(block.settings)
+          });
+        }
+      }
+    }
+
+    const transformedSettings = this.transformSettings(section.settings || {});
+    
     const context = {
       section: {
         id: sectionKey,
         type: section.type,
-        settings: section.settings || {},
-        blocks: section.blocks || {},
-        block_order: section.block_order || []
+        settings: transformedSettings,
+        blocks: transformedBlocks
       },
-      blocks: [],
+      settings: transformedSettings,  // Add settings at top level for compatibility
       forloop: {
-        length: 0,
+        length: section.block_order?.length || 0,
         index: 0,
         index0: 0,
-        rindex: 0,
-        rindex0: 0,
+        rindex: section.block_order?.length || 0,
+        rindex0: (section.block_order?.length || 1) - 1,
         first: true,
         last: true
       }
     };
 
     try {
-      console.log('Rendering template with context:', JSON.stringify(context, null, 2));
       const engine = this.getEngine(shopId);
-      const html = await engine.parseAndRender(template.liquid, context);
-      console.log('Successfully rendered section:', section.type);
-      return this.wrapSection(html, section, sectionKey);
+      const rendered = await engine.parseAndRender(template.liquid, context);
+      return this.wrapSection(rendered, section, sectionKey);
     } catch (error) {
       console.error('Error rendering section:', error);
-      console.error('Template liquid:', template.liquid);
-      return `<div class="section" data-section-type="${section.type}">
-        <div style="padding: 20px; text-align: center; background: #fee7e6; border: 1px dashed #d82c0d;">
-          <p>Error rendering section: ${error instanceof Error ? error.message : 'Unknown error'}</p>
-          <pre style="text-align: left; margin-top: 10px; padding: 10px; background: #fff;">${error instanceof Error ? error.stack : ''}</pre>
-        </div>
-      </div>`;
+      return this.renderFallback(section, sectionKey);
     }
   }
 
@@ -161,39 +209,49 @@ export class RendererService {
     `;
   }
 
-  private static async renderBlock(block: Block, blockKey: string, sectionKey: string): Promise<string> {
+  private static async renderBlock(block: Block, blockKey: string, sectionKey: string, shopId: string): Promise<string> {
+    const transformedSettings = this.transformSettings(block.settings);
     const context = {
       block: {
         id: blockKey,
         type: block.type,
-        settings: block.settings,
+        settings: transformedSettings,
         section: sectionKey
       }
     };
 
     try {
-      const engine = this.getEngine('dummy'); // TODO: Pass shopId when available
-      const rendered = await engine.parseAndRender(`
-        <div class="block" data-block-id="{{ block.id }}" data-block-type="{{ block.type }}">
-          {% for setting in block.settings %}
-            <div class="block-setting">
-              <strong>{{ setting[0] }}:</strong> {{ setting[1] }}
-            </div>
-          {% endfor %}
-        </div>
-      `, context);
+      // Get the section definition to find the block template
+      const sectionType = block.type.split('.')[0]; // Assuming block types are prefixed with section type
+      const template = await TemplateService.getSectionDefinition(shopId, sectionType);
+      if (!template || !template.blocks?.[block.type]) {
+        console.warn(`No template found for block type: ${block.type}`);
+        return this.renderFallbackBlock(block, blockKey);
+      }
 
-      return rendered;
-    } catch (error) {
-      console.error('Error rendering block:', error);
+      const blockTemplate = template.blocks[block.type];
+      const engine = this.getEngine(shopId);
+      const rendered = await engine.parseAndRender(blockTemplate.liquid, context);
+
       return `
-        <div class="block block-error" data-block-id="${blockKey}" data-block-type="${block.type}">
-          <div class="block-content">
-            <pre>${JSON.stringify(block.settings, null, 2)}</pre>
-          </div>
+        <div class="block" data-block-id="${blockKey}" data-block-type="${block.type}">
+          ${rendered}
         </div>
       `;
+    } catch (error) {
+      console.error('Error rendering block:', error);
+      return this.renderFallbackBlock(block, blockKey);
     }
+  }
+
+  private static renderFallbackBlock(block: Block, blockKey: string): string {
+    return `
+      <div class="block block-error" data-block-id="${blockKey}" data-block-type="${block.type}">
+        <div class="block-content">
+          <pre>${JSON.stringify(block.settings, null, 2)}</pre>
+        </div>
+      </div>
+    `;
   }
 
   static async renderPage(shopId: string, page: Page): Promise<string> {

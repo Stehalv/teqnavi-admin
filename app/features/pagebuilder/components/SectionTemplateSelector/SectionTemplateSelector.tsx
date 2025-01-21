@@ -50,7 +50,7 @@ export const SectionTemplateSelector = memo(function SectionTemplateSelector({
       addSection(section.type, {
         ...section.settings,
         blocks: { ...section.blocks },
-        block_order: [...section.block_order]
+        block_order: [...(section.block_order ?? [])]
       });
       onClose();
     } catch (err) {

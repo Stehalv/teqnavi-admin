@@ -84,9 +84,14 @@ export interface Section {
   styles?: string;
 }
 
+export interface SectionWithBlocks extends Section {
+  blocks: Record<string, Block>;
+  block_order: string[];
+}
+
 // Type guard for sections with blocks
-export function isSectionWithBlocks(section: Section): section is Section & { blocks: Record<string, Block>; block_order: string[] } {
-  return 'blocks' in section && 'block_order' in section;
+export function isSectionWithBlocks(section: Section): boolean {
+  return section.blocks !== undefined && Object.keys(section.blocks).length > 0;
 }
 
 // Shopify Page JSON Structure

@@ -17,7 +17,7 @@ export const SectionRenderer = memo(function SectionRenderer({
   isSelected,
   selectedBlockKey
 }: SectionRendererProps) {
-  const [renderedHtml, setRenderedHtml] = useState<string | null>(null);
+  const [renderedHtml, setRenderedHtml] = useState<string>('');
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,14 +38,16 @@ export const SectionRenderer = memo(function SectionRenderer({
         });
 
         if (!response.ok) {
-          throw new Error('Failed to render section');
+          const errorData = await response.json().catch(() => ({ error: 'Failed to render section' }));
+          throw new Error(errorData.error || 'Failed to render section');
         }
 
         const html = await response.text();
-        setRenderedHtml(html);
+        setRenderedHtml(html || '');
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to render section');
         console.error('Error rendering section:', err);
+        setRenderedHtml('');
       } finally {
         setIsInitialLoad(false);
       }
@@ -76,7 +78,7 @@ export const SectionRenderer = memo(function SectionRenderer({
   return (
     <div 
       className={`${styles.section} ${isSelected ? styles.selected : ''}`}
-      dangerouslySetInnerHTML={{ __html: renderedHtml || '' }}
+      dangerouslySetInnerHTML={{ __html: renderedHtml }}
     />
   );
 }); 

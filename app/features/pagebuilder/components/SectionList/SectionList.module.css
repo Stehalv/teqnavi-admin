@@ -1,27 +1,48 @@
 .sectionList {
-  width: 300px;
-  padding: 1rem;
-  background-color: var(--p-surface);
-  border-right: 1px solid var(--p-border-subdued);
+  width: 100%;
 }
 
 .sections {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--p-space-300);
 }
 
 .section {
-  display: flex;
-  flex-direction: column;
-  background-color: var(--p-surface);
-  border: 1px solid var(--p-border-subdued);
-  border-radius: var(--p-border-radius-200);
+  border: 2px solid var(--p-border-subdued);
+  border-radius: var(--p-border-radius-300);
+  background: var(--p-surface);
+  transition: all 150ms ease-in-out;
+  box-shadow: var(--p-shadow-200);
+  overflow: visible;
+}
+
+.section:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--p-shadow-300);
+  border-color: var(--p-border);
+}
+
+.section.selected {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12),
+              0 0 1px rgba(0, 0, 0, 0.08),
+              0 4px 8px rgba(0, 0, 0, 0.06);
+  border-color: var(--p-border-emphasis);
+  z-index: 1;
+}
+
+.section.selected:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12),
+              0 0 1px rgba(0, 0, 0, 0.08),
+              0 4px 8px rgba(0, 0, 0, 0.06);
 }
 
 .sectionHeader {
-  padding: 0.75rem;
+  padding: var(--p-space-400);
   cursor: pointer;
+  transition: all 150ms ease-in-out;
 }
 
 .sectionHeader:hover {
@@ -30,22 +51,23 @@
 
 .selected .sectionHeader {
   background-color: var(--p-surface-selected);
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
-
-.selected .sectionHeader:hover {
-  background-color: var(--p-surface-selected-hovered);
 }
 
 .sectionDragHandle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
   color: var(--p-text-subdued);
   cursor: grab;
+  padding: var(--p-space-100);
+  border-radius: var(--p-border-radius-100);
+  transition: background-color 100ms ease-in-out;
+}
+
+.sectionDragHandle:hover {
+  background-color: var(--p-surface-hovered);
+}
+
+.sectionDragHandle:active {
+  cursor: grabbing;
+  background-color: var(--p-surface-pressed);
 }
 
 .sectionContent {
@@ -53,25 +75,70 @@
   min-width: 0;
 }
 
+.sectionContent p {
+  text-transform: capitalize;
+}
+
 .sectionBlocks {
-  padding: 0.5rem;
-  background-color: var(--p-surface-subdued);
-  border-bottom-left-radius: var(--p-border-radius-200);
-  border-bottom-right-radius: var(--p-border-radius-200);
+  padding: var(--p-space-400);
+  background: var(--p-surface-subdued);
+  border-top: 2px solid var(--p-border-subdued);
+  border-bottom-left-radius: calc(var(--p-border-radius-300) - 2px);
+  border-bottom-right-radius: calc(var(--p-border-radius-300) - 2px);
+}
+
+.selected .sectionBlocks {
+  border-top-color: var(--p-border-emphasis);
+  background: var(--p-surface-selected);
 }
 
 .blockList {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: var(--p-space-300);
 }
 
 .block {
-  padding: 0.5rem;
-  background-color: var(--p-surface);
+  padding: var(--p-space-300);
+  border-radius: var(--p-border-radius-200);
+  background: var(--p-surface);
+  border: 2px solid var(--p-border-subdued);
+  margin-bottom: var(--p-space-200);
+  transition: all 150ms ease-in-out;
+  box-shadow: var(--p-shadow-100);
+}
+
+.block:last-child {
+  margin-bottom: 0;
+}
+
+.selected .block {
+  border-color: var(--p-border);
+  background: var(--p-surface);
+}
+
+.block:hover {
+  background: var(--p-surface-hovered);
+  border-color: var(--p-border);
+  transform: translateY(-1px);
+  box-shadow: var(--p-shadow-200);
+}
+
+.blockDragHandle {
+  cursor: grab;
+  color: var(--p-text-subdued);
+  display: flex;
+  align-items: center;
+  padding: var(--p-space-100);
   border-radius: var(--p-border-radius-100);
-  border: 1px solid var(--p-border-subdued);
+  transition: background-color 100ms ease-in-out;
+}
+
+.blockDragHandle:hover {
+  background-color: var(--p-surface-hovered);
+}
+
+.blockDragHandle:active {
+  cursor: grabbing;
+  background-color: var(--p-surface-pressed);
 }
 
 .sectionList:empty {

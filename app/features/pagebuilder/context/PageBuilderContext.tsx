@@ -75,8 +75,19 @@ export function PageBuilderProvider({
   onSave,
   onPublish
 }: PageBuilderProviderProps) {
+  // Initialize block_order for any sections that have blocks but no block_order
+  const processedInitialPage = useMemo(() => {
+    const processedPage = { ...initialPage };
+    Object.entries(processedPage.data.sections).forEach(([sectionKey, section]) => {
+      if (section.blocks && !section.block_order) {
+        section.block_order = Object.keys(section.blocks);
+      }
+    });
+    return processedPage;
+  }, [initialPage]);
+
   const [state, updateState] = useImmer<PageBuilderState>({
-    page: initialPage,
+    page: processedInitialPage,
     selectedSectionKey: undefined,
     selectedBlockKey: undefined,
     isDragging: false,
@@ -165,29 +176,80 @@ export function PageBuilderProvider({
   const addBlock = useCallback((sectionKey: string, type: string) => {
     updateState(draft => {
       const section = draft.page.data.sections[sectionKey];
-      if (section) {
-        const blockKey = `block-${uuidv4()}`;
-        const sectionDefinition = sectionRegistry[section.type];
-        const blockDefinition = sectionDefinition?.blocks?.[type];
+      if (!section) return;
 
-        if (blockDefinition) {
-          section.blocks[blockKey] = {
-            type,
-            settings: {}
-          };
-          section.block_order.push(blockKey);
-          draft.selectedBlockKey = blockKey;
-        }
+      const sectionDefinition = sectionRegistry[section.type];
+      if (!sectionDefinition?.schema?.blocks) return;
+
+      const blockDefinition = sectionDefinition.schema.blocks.find(block => block.type === type);
+      if (!blockDefinition) return;
+
+      // Initialize settings with defaults from schema
+      const initialSettings: Record<string, any> = {};
+      if (blockDefinition.settings) {
+        blockDefinition.settings.forEach(field => {
+          if (field.default !== undefined) {
+            initialSettings[field.id] = field.default;
+          } else {
+            switch (field.type) {
+              case 'text':
+              case 'textarea':
+              case 'color':
+              case 'url':
+                initialSettings[field.id] = '';
+                break;
+              case 'number':
+                initialSettings[field.id] = field.min || 0;
+                break;
+              case 'select':
+                initialSettings[field.id] = field.options?.[0]?.value || '';
+                break;
+              case 'checkbox':
+                initialSettings[field.id] = false;
+                break;
+              default:
+                initialSettings[field.id] = null;
+            }
+          }
+        });
       }
+
+      const blockKey = uuidv4();
+      const newBlock: Block = {
+        type,
+        settings: initialSettings
+      };
+
+      // Ensure blocks is initialized
+      if (!section.blocks) {
+        section.blocks = {};
+      }
+
+      // Add the new block
+      section.blocks[blockKey] = newBlock;
+
+      // Initialize block_order with existing blocks if undefined
+      if (!section.block_order) {
+        const existingBlockKeys = Object.keys(section.blocks);
+        section.block_order = existingBlockKeys.filter(key => key !== blockKey);
+      }
+
+      // Add the new block to block_order
+      section.block_order.push(blockKey);
+
+      console.log('Block settings initialized:', {
+        blockKey,
+        type,
+        settings: initialSettings
+      });
     });
   }, [sectionRegistry]);
 
   const deleteBlock = useCallback((sectionKey: string, blockKey: string) => {
     updateState(draft => {
       const section = draft.page.data.sections[sectionKey];
-      if (section) {
+      if (section && section.blocks && section.block_order) {
         delete section.blocks[blockKey];
-        if (!section.block_order) section.block_order = [];
         section.block_order = section.block_order.filter(key => key !== blockKey);
         if (draft.selectedBlockKey === blockKey) {
           draft.selectedBlockKey = undefined;
@@ -207,7 +269,16 @@ export function PageBuilderProvider({
         if (!section.blocks) section.blocks = {};
         const block = section.blocks[blockKey];
         if (block) {
-          Object.assign(block.settings, settings);
+          console.log('Block settings update:', {
+            blockKey,
+            before: block.settings,
+            updates: settings,
+            after: { ...block.settings, ...settings }
+          });
+          block.settings = {
+            ...block.settings,
+            ...settings
+          };
         }
       }
     });
@@ -233,6 +304,13 @@ export function PageBuilderProvider({
   const selectBlock = useCallback((blockKey?: string) => {
     updateState(draft => {
       draft.selectedBlockKey = blockKey;
+      if (blockKey && draft.selectedSectionKey) {
+        const block = draft.page.data.sections[draft.selectedSectionKey]?.blocks?.[blockKey];
+        console.log('Selected block settings:', {
+          blockKey,
+          settings: block?.settings
+        });
+      }
     });
   }, []);
 

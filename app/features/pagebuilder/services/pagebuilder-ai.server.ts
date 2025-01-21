@@ -35,35 +35,43 @@ export class PageBuilderAI {
   "sections": {
     "section-id": { 
       "type": "section-type",
-      "settings": {}
-    },
-    "section-id": {
-      "type": "section-type",
-      "settings": {}
+      "settings": {
+        // IMPORTANT: All settings must use underscores, not hyphens. Examples:
+        "text_color": "#000000",       // ✅ Use text_color, not text-color
+        "font_size": "16px",          // ✅ Use font_size, not font-size
+        "title_font_size": "24px",    // ✅ Use title_font_size, not title-font-size
+        "padding_top": "40",          // ✅ Use padding_top, not padding-top
+        "padding_bottom": "40",       // ✅ Use padding_bottom, not padding-bottom
+        "background_color": "#ffffff" // ✅ Use background_color, not background-color
+      }
     }
   },
-  "order": ["section-id", "section-id"]
+  "order": ["section-id"]
 }
 
 The response MUST be valid JSON and MUST include the "sections" object.
 1. A descriptive name for the page
 2. A well-structured layout with sections that follow e-commerce best practices
-4. Each section should have fully configured settings for:
-   - Typography (font sizes, weights, colors)
-   - Spacing and padding
+3. Each section should have fully configured settings for:
+   - Typography (using flat keys with underscores like text_color, font_size)
+   - Spacing and padding (using underscores like padding_top)
    - Responsive behavior (mobile/desktop)
-   - Background styling
+   - Background styling (using underscores like background_color)
    - Content alignment and width
-5. Blocks within sections where appropriate
-6. If your template requires reusable components, create them as snippets.
-7. SEO-friendly content structure
-8. Accessibility considerations
-9. Performance optimizations (lazy loading, etc)
+4. Blocks within sections where appropriate
+5. If your template requires reusable components, create them as snippets.
+6. SEO-friendly content structure
+7. Accessibility considerations
+8. Performance optimizations (lazy loading, etc)
 
 The page should follow modern e-commerce design patterns and be optimized for conversions.
 Include settings that control all visual elements and user interactions.
 
-IMPORTANT: Sections MUST be an object with IDs as keys, not an array.`;
+IMPORTANT: 
+- Sections MUST be an object with IDs as keys, not an array.
+- All settings MUST be flat, not nested in objects like typography or styles.
+- ALL setting names MUST use underscores (_) not hyphens (-).
+- Follow Shopify naming conventions (e.g., text_color, font_size, padding_top)`;
 
   static readonly TEMPLATE_PROMPT = `Generate a Shopify section template JSON that follows this exact structure:
 {
@@ -72,7 +80,7 @@ IMPORTANT: Sections MUST be an object with IDs as keys, not an array.`;
     "settings": [
       {
         "type": "text|image_picker|select|radio|checkbox|range|color|richtext",
-        "id": "setting_id",
+        "id": "setting_id",     // MUST use underscores, not hyphens
         "label": "Setting Label",
         "default": "default value"
       }
@@ -81,82 +89,51 @@ IMPORTANT: Sections MUST be an object with IDs as keys, not an array.`;
       {
         "type": "block_type",
         "name": "Block Name",
-        "settings": []
+        "settings": [
+          {
+            "type": "text",
+            "id": "text_color",  // Example of correct underscore naming
+            "label": "Text Color",
+            "default": "#000000"
+          }
+        ]
       }
     ]
   },
   "liquid": "{% comment %}Section template code{% endcomment %}",
-  "styles": "/* Section CSS */
-.section-name {
-  /* Base styles */
-  --section-padding: 4rem;
-  --heading-color: {{ settings.heading_color }};
-  padding: var(--section-padding) 0;
-  
-  /* Responsive container */
-  .container {
-    max-width: var(--page-width);
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-  
-  /* Typography */
-  .heading {
-    color: var(--heading-color);
-    font-size: clamp(2rem, 5vw, 3rem);
-    line-height: 1.2;
-    margin-bottom: 2rem;
-  }
-  
-  /* Responsive breakpoints */
-  @media screen and (max-width: 749px) {
-    --section-padding: 2rem;
-  }
-  
-  /* Hover states and transitions */
-  .button {
-    transition: opacity 0.3s ease;
-    &:hover {
-      opacity: 0.8;
-    }
-  }
-  
-  /* Accessibility */
-  .visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    border: 0;
-  }
-}",
-"snippets": {
-    "snippet-id": "{% comment %}Reusable code snippet liquid code{% endcomment %} ..."
-  }
+  "styles": "
+    /* Section CSS */
+    .section-name {
+      /* Base styles */
+      --section-padding: {{ settings.padding_top }}px;  // Note underscore in setting name
+      --text-color: {{ settings.text_color }};         // Note underscore in setting name
+      
+      padding: var(--section-padding) 0;
+      color: var(--text-color);
+  }"
 }
 
 The template should:
-1. Use semantic HTML in the liquid code (header, main, section, article, etc.)
-2. Include responsive styles with mobile-first approach using @media queries
-3. Use CSS custom properties for theme settings (colors, fonts, spacing)
-4. Follow BEM naming convention for CSS classes (block__element--modifier)
-5. Optimize for performance (minimal nesting, efficient selectors)
+1. Use semantic HTML in the liquid code
+2. Include responsive styles with mobile-first approach
+3. Use CSS custom properties for theme settings
+4. Follow BEM naming convention for CSS classes
+5. Optimize for performance
 6. Include hover states and smooth transitions
-7. Support dynamic content from settings using their IDs (e.g. {{ section.settings.heading }})
-8. Ensure accessibility (proper contrast, focus states, aria attributes)
-9. Use modern CSS features (flexbox, grid, clamp(), custom properties)
+7. Support dynamic content from settings using their IDs
+8. Ensure accessibility
+9. Use modern CSS features
 10. Include print styles where appropriate
 
-Example settings to theme:
-- Colors (background, text, accents)
-- Typography (font sizes, line heights)
-- Spacing (padding, margins)
-- Layout (container width, columns)
-- Content alignment
-- Mobile breakpoints`;
+IMPORTANT: ALL setting IDs must use underscores (_) not hyphens (-). Examples:
+- ✅ text_color
+- ✅ font_size
+- ✅ padding_top
+- ✅ background_color
+- ❌ text-color
+- ❌ font-size
+- ❌ padding-top
+- ❌ background-color`;
 
   private static readonly cleanJsonResponse = (content: string): string => {
     // Extract just the JSON part from the response

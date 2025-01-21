@@ -132,24 +132,27 @@ export const InlineRichTextInput = memo(function InlineRichTextInput({
   value,
   onChange
 }: RichContentInputProps<InlineRichTextField>) {
+  // Convert undefined/null values to empty string
+  const safeValue = value === undefined || value === null ? '' : String(value);
+
   const handleToolbarAction = useCallback((action: (text: string) => string) => {
     const textarea = document.querySelector(
-      `textarea[name="${field.key}"]`
+      `textarea[name="${field.id}"]`
     ) as HTMLTextAreaElement;
 
     if (textarea) {
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const selectedText = value.substring(start, end);
+      const selectedText = safeValue.substring(start, end);
       const newText =
-        value.substring(0, start) +
+        safeValue.substring(0, start) +
         action(selectedText || 'text') +
-        value.substring(end);
+        safeValue.substring(end);
       onChange(newText);
     } else {
       onChange(action('text'));
     }
-  }, [field.key, value, onChange]);
+  }, [field.id, safeValue, onChange]);
 
   return (
     <BlockStack gap="200">
@@ -163,8 +166,8 @@ export const InlineRichTextInput = memo(function InlineRichTextInput({
       />
       <TextField
         label=""
-        name={field.key}
-        value={value}
+        name={field.id}
+        value={safeValue}
         onChange={onChange}
         multiline
         autoComplete="off"
@@ -179,24 +182,27 @@ export const RichTextInput = memo(function RichTextInput({
   value,
   onChange
 }: RichContentInputProps<RichTextField>) {
+  // Convert undefined/null values to empty string
+  const safeValue = value === undefined || value === null ? '' : String(value);
+
   const handleToolbarAction = useCallback((action: (text: string) => string) => {
     const textarea = document.querySelector(
-      `textarea[name="${field.key}"]`
+      `textarea[name="${field.id}"]`
     ) as HTMLTextAreaElement;
 
     if (textarea) {
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const selectedText = value.substring(start, end);
+      const selectedText = safeValue.substring(start, end);
       const newText =
-        value.substring(0, start) +
+        safeValue.substring(0, start) +
         action(selectedText || 'text') +
-        value.substring(end);
+        safeValue.substring(end);
       onChange(newText);
     } else {
       onChange(action('text'));
     }
-  }, [field.key, value, onChange]);
+  }, [field.id, safeValue, onChange]);
 
   return (
     <BlockStack gap="200">
@@ -210,8 +216,8 @@ export const RichTextInput = memo(function RichTextInput({
       />
       <TextField
         label=""
-        name={field.key}
-        value={value}
+        name={field.id}
+        value={safeValue}
         onChange={onChange}
         multiline={6}
         autoComplete="off"

@@ -3,6 +3,7 @@ import { Liquid } from 'liquidjs';
 import type { SettingField } from '../types/shopify.js';
 import type { SectionLiquidTemplate } from '../types/templates.js';
 import type { AIGeneratedTemplate } from '../types/ai.js';
+import type { BlockTemplate as PrismaBlockTemplate } from '@prisma/client';
 
 export interface TemplateSchema {
   settings: SettingField[];
@@ -161,6 +162,9 @@ export class TemplateService {
       where: {
         shopId,
         type
+      },
+      include: {
+        blocks: true
       }
     });
 
@@ -169,6 +173,16 @@ export class TemplateService {
     const schema = typeof template.schema === 'string' ? JSON.parse(template.schema) : template.schema;
     const settings = template.settings ? JSON.parse(template.settings) : undefined;
 
+    // Convert block templates to the expected format
+    const blocks = template.blocks.reduce((acc: Record<string, { name: string; schema: TemplateSchema; liquid: string; }>, block: PrismaBlockTemplate) => {
+      acc[block.type] = {
+        name: block.name,
+        schema: JSON.parse(block.schema),
+        liquid: block.liquid
+      };
+      return acc;
+    }, {});
+
     return {
       type: template.type,
       name: template.name,
@@ -176,7 +190,8 @@ export class TemplateService {
       liquid: template.liquid,
       styles: template.styles,
       snippets: {},  // Return empty snippets object
-      settings
+      settings,
+      blocks
     };
   }
 
